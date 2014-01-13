@@ -16,8 +16,6 @@ endif
 
 INC_ = -I./ -I../include
 
-INC += -I${MPI_INCDIR}
-
 all: ${LIBCINT}
 
 ${LIBCINT}: ${OBJS}
@@ -32,4 +30,4 @@ mic/%.o : %.c Makefile
 	$(CC) ${CFLAGS} ${INC} -c $< -o $@
 
 clean:
-	rm -f *.o mic/* *.s *.d *~ ${LIBCINT}
+	rm -f *.o mic/*.o *.s *.d *~ *.a
