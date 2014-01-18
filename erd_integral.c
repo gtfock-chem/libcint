@@ -253,3 +253,9 @@ CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
 
     return CINT_STATUS_SUCCESS;
 }
+
+
+int CInt_getMaxMemory (ERD_t erd)
+{
+    return (erd->zmax + erd->imax);
+}
