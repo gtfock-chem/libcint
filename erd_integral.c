@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "erd_integral.h"
+#include "erd_profile.h"
 #include "basisset.h"
 #include "config.h"
 #include "cint_def.h"
@@ -182,7 +183,7 @@ CIntStatus_t CInt_destroyERD (ERD_t erd)
     free (erd->coef_offset);
     free (erd->exp_offset);
     free (erd);
-    
+
     return CINT_STATUS_SUCCESS;
 }
 
