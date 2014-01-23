@@ -113,5 +113,7 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
                                        double **integrals,
                                        int *nints );
 
+int CInt_getMaxMemory (ERD_t erd);
+
 
 #endif /* __CINT_DEF_H__ */
