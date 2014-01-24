@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "erd_integral.h"
-#include "erd_profile.h"
 #include "basisset.h"
 #include "config.h"
 #include "cint_def.h"
