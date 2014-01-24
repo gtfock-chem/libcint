@@ -1,7 +1,7 @@
 include ../make.in
 
 SRC = $(wildcard *.c)
-CFLAGS = -O3 -Wall -w2 -openmp -fPIC -g
+CFLAGS = -O3 -Wall -w2 -openmp
 CFLAGS += -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
 
