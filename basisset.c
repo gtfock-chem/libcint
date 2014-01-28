@@ -275,8 +275,8 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
     basis->eptr = (int *)malloc (sizeof(int) * ELEN);
     basis->atom_start = (int *)malloc (sizeof(int) * (natoms + 1));
     basis->nexp0 = (int *)malloc (sizeof(int) * nshells);
-    basis->cc0 = (double *)malloc (sizeof(double) * totnexp);
-    basis->exp0 = (double *)malloc (sizeof(double) * totnexp);
+    basis->cc0 = (double *)ALIGNED_MALLOC (sizeof(double) * totnexp);
+    basis->exp0 = (double *)ALIGNED_MALLOC (sizeof(double) * totnexp);
     basis->momentum0 = (int *)malloc (sizeof(int) * nshells);
     basis->ptrshell = (int *)malloc (sizeof(int) * (nshells + 1)); 
     if (NULL == basis->atom_start ||
@@ -526,6 +526,17 @@ CIntStatus_t CInt_loadBasisSet (BasisSet_t basis, char *bsfile, char *molfile)
         return ret;
     }
 
+    free (basis->eid);
+    free (basis->xn);
+    free (basis->yn);
+    free (basis->zn);   
+    free (basis->ncharge);
+    free (basis->eptr);
+    free (basis->atom_start);
+    free (basis->ptrshell);
+    free (basis->nexp0);
+    free (basis->momentum0);
+    
     return CINT_STATUS_SUCCESS;
 }
 
@@ -534,10 +545,9 @@ CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
 {
     free (basis->f_start_id);
     free (basis->f_end_id);
-    free (basis->xn);
-    free (basis->yn);
-    free (basis->zn);
-    free (basis->ncharge);
+
+    ALIGNED_FREE (basis->cc0);
+    ALIGNED_FREE (basis->exp0);
 
     free (basis);
 
@@ -651,8 +661,8 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
     memcpy (basis->eid, &(_buf[offset]), sizeof(int) * basis->natoms);
     offset += sizeof(int) * basis->natoms;
 
-    basis->cc0 = (double *)malloc (sizeof(double) * basis->totnexp);
-    basis->exp0 = (double *)malloc (sizeof(double) * basis->totnexp);
+    basis->cc0 = (double *)ALIGNED_MALLOC (sizeof(double) * basis->totnexp);
+    basis->exp0 = (double *)ALIGNED_MALLOC (sizeof(double) * basis->totnexp);
     basis->eptr = (int *)malloc (sizeof(int) * ELEN);
     basis->atom_start = (int *)malloc (sizeof(int) * (basis->natoms + 1)); 
     basis->momentum0 = (int *)malloc (sizeof(int) * basis->lenshell0);

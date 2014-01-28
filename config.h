@@ -9,6 +9,20 @@
                              //  0 is no debug print info at all,
                              //  10 is full info
 
+#if defined (__MIC__)
+#define SIMDW      64
+#elif defined (__AVX__)
+#define SIMDW      32
+#elif defined (__SSE__)
+#define SIMDW      16
+#else
+#define SIMDW      64
+#endif
+
+
+#define ALIGNED_MALLOC(size)  _mm_malloc(size, __ALIGNLEN__)
+#define ALIGNED_FREE(addr)    _mm_free(addr)
+
 
 #if ( _DEBUG_LEVEL_ == -1 )
 #define CINT_PRINTF( level, fmt, args... )        {}

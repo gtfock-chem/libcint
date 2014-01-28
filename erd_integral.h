@@ -17,8 +17,12 @@ extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                             double x2, double y2, double z2,
                             double x3, double y3, double z3,
                             double x4, double y4, double z4,
-                            double *alpha, double *cc, int screen,
-                            int *icore, int *nbatch, int *nfirst, double *zcore);
+                            double *alpha1, double *alpha2,
+                            double *alpha3, double *alpha4,
+                            double *cc1, double *cc2,
+                            double *cc3, double *cc4, int screen,
+                            int *icore, int *nbatch,
+                            int *nfirst, double *zcore);
 
 extern int erd__csgto (int zmax, int npgto1, int npgto2,
                        int npgto3, int npgto4,
@@ -28,7 +32,10 @@ extern int erd__csgto (int zmax, int npgto1, int npgto2,
                        double x2, double y2, double z2,
                        double x3, double y3, double z3,
                        double x4, double y4, double z4,
-                       double *alpha, double *cc,
+                       double *alpha1, double *alpha2,
+                       double *alpha3, double *alpha4,
+                       double *cc1, double *cc2,
+                       double *cc3, double *cc4,
                        int spheric, int screen, int *icore,
                        int *nbatch, int *nfirst, double *zcore);
 
@@ -40,8 +47,7 @@ extern int erd__memory_1111_csgto (int npgto1, int npgto2,
                                    double x2, double y2, double z2,
                                    double x3, double y3, double z3,
                                    double x4, double y4, double z4,
-                                   int *imin, int *iopt,
-                                   int *zmin, int *zopt);
+                                   int *iopt, int *zopt);
 
 extern int erd__memory_csgto (int npgto1, int npgto2,
                               int npgto3, int npgto4,
@@ -50,8 +56,7 @@ extern int erd__memory_csgto (int npgto1, int npgto2,
                               double x2, double y2, double z2,
                               double x3, double y3, double z3,
                               double x4, double y4, double z4,
-                              int spheric, int *imin, int *iopt,
-                              int *zmin, int *zopt);
+                              int spheric, int *iopt, int *zopt);
 
 
 #endif /* __ERD_INTEGRAL_H__ */

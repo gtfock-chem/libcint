@@ -4,6 +4,7 @@ SRC = $(wildcard *.c)
 CFLAGS = -O3 -Wall -w2 -openmp
 CFLAGS += -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
+CFLAGS += -D__ALIGNLEN__=${alignlen}
 
 ifeq "${arch}" "mic"
 LIBCINT = libcint_mic.a
