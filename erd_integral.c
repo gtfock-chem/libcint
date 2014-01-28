@@ -99,21 +99,34 @@ static void erd_max_scratch (BasisSet_t basis, ERD_t erd)
     erd->z2 = 2.0;
     erd->z3 = 3.0;
     erd->z4 = 4.0;
-  
-    erd__memory_eri_batch_ (&(erd->nalpha), &(erd->ncoef),
-                            &(erd->ncgto1), &(erd->ncgto2),
-                            &(erd->ncgto3), &(erd->ncgto4),
-                            &(erd->npgto1), &(erd->npgto2),
-                            &(erd->npgto3), &(erd->npgto4),
-                            &(erd->shell1), &(erd->shell2),
-                            &(erd->shell3), &(erd->shell4),
-                            &(erd->x1), &(erd->y1), &(erd->z1),
-                            &(erd->x2), &(erd->y2), &(erd->z2),
-                            &(erd->x3), &(erd->y3), &(erd->z3),
-                            &(erd->x4), &(erd->y4), &(erd->z4),
-                            erd->alpha, erd->cc, &(erd->spheric),
-                            &int_memory_min, &int_memory_opt,
-                            &fp_memory_min, &fp_memory_opt);
+
+    if (max_momentum < 2)
+    {
+        erd__memory_1111_csgto (erd->npgto1, erd->npgto2,
+                                erd->npgto3, erd->npgto4,
+                                erd->shell1, erd->shell2,
+                                erd->shell3, erd->shell4,
+                                erd->x1, erd->y1, erd->z1,
+                                erd->x2, erd->y2, erd->z2,
+                                erd->x3, erd->y3, erd->z3,
+                                erd->x4, erd->y4, erd->z4,
+                                &int_memory_min, &int_memory_opt,
+                                &fp_memory_min, &fp_memory_opt);
+    }
+    else
+    {
+        erd__memory_csgto (erd->npgto1, erd->npgto2,
+                           erd->npgto3, erd->npgto4,
+                           erd->shell1, erd->shell2,
+                           erd->shell3, erd->shell4,
+                           erd->x1, erd->y1, erd->z1,
+                           erd->x2, erd->y2, erd->z2,
+                           erd->x3, erd->y3, erd->z3,
+                           erd->x4, erd->y4, erd->z4,
+                           ERD_SPHERIC, &int_memory_min, &int_memory_opt,
+                           &fp_memory_min, &fp_memory_opt);
+    }
+    
     erd->int_memory_opt = erd->int_memory_opt > int_memory_opt ?
             erd->int_memory_opt : int_memory_opt;
     erd->fp_memory_opt = erd->fp_memory_opt > fp_memory_opt ?
@@ -126,7 +139,12 @@ CIntStatus_t CInt_createERD (BasisSet_t basis, ERD_t *erd)
     ERD_t e;
     int max_ncoef;
     int max_nexp;
-
+    int tid;
+    
+    tid = omp_get_thread_num ();
+    if (tid == 0)
+        printf ("@@@ Optimized ERD code!!\n");
+    
     e = (ERD_t)calloc (1, sizeof(struct ERD));
     if (NULL == e)
     {
@@ -192,6 +210,7 @@ CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
                                         double **integrals, int *nints)
 {
     int nfirst;
+    int maxshell;
 
 #if ( _DEBUG_LEVEL_ == 3 )
     if (A < 0 || A >= basis->nshells ||
@@ -207,47 +226,37 @@ CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
     
     config_erd (erd, A, B, C, D, basis);
 
-#if ( _DEBUG_LEVEL_ == 3 )
-    int int_memory_min;
-    int int_memory_opt;
-    int fp_memory_min;
-    int fp_memory_opt;
-    erd__memory_eri_batch_ (&(erd->nalpha), &(erd->ncoef),
-                            &(erd->ncgto1), &(erd->ncgto2),
-                            &(erd->ncgto3), &(erd->ncgto4),
-                            &(erd->npgto1), &(erd->npgto2),
-                            &(erd->npgto3), &(erd->npgto4),
-                            &(erd->shell1), &(erd->shell2),
-                            &(erd->shell3), &(erd->shell4),
-                            &(erd->x1), &(erd->y1), &(erd->z1),
-                            &(erd->x2), &(erd->y2), &(erd->z2),
-                            &(erd->x3), &(erd->y3), &(erd->z3),
-                            &(erd->x4), &(erd->y4), &(erd->z4),
-                            erd->alpha, erd->cc, &(erd->spheric),
-                            &int_memory_min, &int_memory_opt,
-                            &fp_memory_min, &fp_memory_opt);
-    assert (fp_memory_opt <= erd->fp_memory_opt);
-    assert (int_memory_opt <= erd->int_memory_opt);   
-#endif
-
-    erd__gener_eri_batch_ (&(erd->imax), &(erd->zmax),
-                           &(erd->nalpha), &(erd->ncoef),
-                           &(erd->ncsum), &(erd->ncgto1),
-                           &(erd->ncgto2), &(erd->ncgto3),
-                           &(erd->ncgto4), &(erd->npgto1),
-                           &(erd->npgto2), &(erd->npgto3),
-                           &(erd->npgto4), &(erd->shell1),
-                           &(erd->shell2), &(erd->shell3),
-                           &(erd->shell4),
-                           &(erd->x1), &(erd->y1), &(erd->z1),
-                           &(erd->x2), &(erd->y2), &(erd->z2),
-                           &(erd->x3), &(erd->y3), &(erd->z3),
-                           &(erd->x4), &(erd->y4), &(erd->z4),
-                           erd->alpha, erd->cc,
-                           erd->cc_beg, erd->cc_end,
-                           &(erd->spheric), &(erd->screen),
-                           erd->icore, nints,
-                           &nfirst, erd->zcore);
+    maxshell = MAX(erd->shell1, erd->shell2);
+    maxshell = MAX(maxshell, erd->shell3);
+    maxshell = MAX(maxshell, erd->shell4);     
+    if (maxshell < 2)
+    {
+	    erd__1111_csgto (erd->zmax, erd->npgto1, erd->npgto2,
+                         erd->npgto3, erd->npgto4,
+                         erd->shell1, erd->shell2,
+                         erd->shell3, erd->shell4,
+                         erd->x1, erd->y1, erd->z1,
+                         erd->x2, erd->y2, erd->z2,
+                         erd->x3, erd->y3, erd->z3,
+                         erd->x4, erd->y4, erd->z4,
+                         erd->alpha, erd->cc,
+                         erd->screen, erd->icore,
+                         nints, &nfirst, erd->zcore);
+    }
+    else
+    {
+	    erd__csgto (erd->zmax, erd->npgto1, erd->npgto2,
+                    erd->npgto3, erd->npgto4,
+                    erd->shell1, erd->shell2,
+                    erd->shell3, erd->shell4,
+                    erd->x1, erd->y1, erd->z1,
+                    erd->x2, erd->y2, erd->z2,
+                    erd->x3, erd->y3, erd->z3,
+                    erd->x4, erd->y4, erd->z4,
+                    erd->alpha, erd->cc,
+                    ERD_SPHERIC, ERD_SCREEN, erd->icore,
+                    nints, &nfirst, erd->zcore);
+    }
 
     *integrals = &(erd->zcore[nfirst - 1]);
 
