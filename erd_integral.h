@@ -9,7 +9,7 @@
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 
 
-extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
+extern __attribute__((target(mic))) int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                             int npgto3, int npgto4,
                             int shell1, int shell2,
                             int shell3, int shell4,
@@ -24,7 +24,7 @@ extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                             int *icore, int *nbatch,
                             int *nfirst, double *zcore);
 
-extern int erd__csgto (int zmax, int npgto1, int npgto2,
+extern __attribute__((target(mic))) int erd__csgto (int zmax, int npgto1, int npgto2,
                        int npgto3, int npgto4,
                        int shell1, int shell2,
                        int shell3, int shell4,

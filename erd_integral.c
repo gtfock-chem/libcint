@@ -87,7 +87,7 @@ CIntStatus_t CInt_destroyERD (ERD_t erd)
 }
 
 
-CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
+__attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
                                         int A, int B, int C, int D,
                                         double **integrals, int *nints)
 {

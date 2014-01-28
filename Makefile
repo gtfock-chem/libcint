@@ -10,6 +10,7 @@ ifeq "${arch}" "mic"
 LIBCINT = libcint_mic.a
 OBJS0 := $(addsuffix .o, $(basename $(SRC)))
 OBJS := $(addprefix mic/, $(OBJS0))
+CFLAGS +=  -offload=none -diag-disable 161,2423
 else
 LIBCINT = libcint.a
 OBJS := $(addsuffix .o, $(basename $(SRC)))
