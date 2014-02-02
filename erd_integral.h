@@ -8,8 +8,9 @@
 
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 
+#pragma offload_attribute(push, target(mic))
 
-extern __attribute__((target(mic))) int erd__1111_csgto (int zmax, int npgto1, int npgto2,
+extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                             int npgto3, int npgto4,
                             int shell1, int shell2,
                             int shell3, int shell4,
@@ -24,7 +25,7 @@ extern __attribute__((target(mic))) int erd__1111_csgto (int zmax, int npgto1, i
                             int *icore, int *nbatch,
                             int *nfirst, double *zcore);
 
-extern __attribute__((target(mic))) int erd__csgto (int zmax, int npgto1, int npgto2,
+extern int erd__csgto (int zmax, int npgto1, int npgto2,
                        int npgto3, int npgto4,
                        int shell1, int shell2,
                        int shell3, int shell4,
@@ -58,5 +59,7 @@ extern int erd__memory_csgto (int npgto1, int npgto2,
                               double x4, double y4, double z4,
                               int spheric, int *iopt, int *zopt);
 
+
+#pragma offload_attribute(pop)
 
 #endif /* __ERD_INTEGRAL_H__ */

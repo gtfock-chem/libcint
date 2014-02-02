@@ -8,6 +8,8 @@
 #include "cint_def.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 static void erd_max_scratch (BasisSet_t basis, ERD_t erd)
 {
     int max_momentum;
@@ -57,7 +59,9 @@ CIntStatus_t CInt_createERD (BasisSet_t basis, ERD_t *erd)
     e = (ERD_t)calloc (1, sizeof(struct ERD));
     if (NULL == e)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "memory allocation failed\n");
+#endif
         return CINT_STATUS_ALLOC_FAILED;
     }
 
@@ -66,7 +70,9 @@ CIntStatus_t CInt_createERD (BasisSet_t basis, ERD_t *erd)
     e->icore = (int *)ALIGNED_MALLOC (e->int_memory_opt * sizeof(int));   
     if (NULL == e->zcore || NULL == e->icore)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "memory allocation failed\n");
+#endif
         return CINT_STATUS_ALLOC_FAILED;
     }
     e->zmax = e->fp_memory_opt;
@@ -104,7 +110,9 @@ __attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet ( BasisSet_t 
         C < 0 || C >= basis->nshells ||
         D < 0 || D >= basis->nshells)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "invalid shell indices\n");
+#endif
         *nints = 0;
         return CINT_STATUS_INVALID_VALUE;
     }
@@ -160,3 +168,5 @@ int CInt_getMaxMemory (ERD_t erd)
 {
     return (erd->fp_memory_opt + erd->int_memory_opt);
 }
+
+#pragma offload_attribute(pop)

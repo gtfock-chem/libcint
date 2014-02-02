@@ -23,11 +23,13 @@ typedef enum
 // basisset
 // TODO: develop basisset parser
 
-CIntStatus_t CInt_createBasisSet( BasisSet_t *basis );
+__attribute__((target(mic))) CIntStatus_t CInt_createBasisSet( BasisSet_t *basis );
 
 CIntStatus_t CInt_loadBasisSet( BasisSet_t basis,
                                 char *bsfile,
                                 char *xyzfile );
+
+__attribute__((target(mic))) CIntStatus_t CInt_freeInitDataBasisSet (BasisSet_t basis);
 
 CIntStatus_t CInt_destroyBasisSet( BasisSet_t basis );
 
@@ -35,7 +37,7 @@ CIntStatus_t CInt_packBasisSet( BasisSet_t basis,
                                 void **buf,
                                 int *bufsize );
 
-CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
+__attribute__((target(mic))) CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
                                 void *buf);
 
 int CInt_getNumShells( BasisSet_t basis );
@@ -98,13 +100,14 @@ CIntStatus_t CInt_computePairCoreH( BasisSet_t basis,
 
 // two electron integrals
 
-CIntStatus_t CInt_createERD( BasisSet_t basis,
+__attribute__((target(mic))) CIntStatus_t CInt_createERD( BasisSet_t basis,
                              ERD_t *erd );
 
-CIntStatus_t CInt_destroyERD( ERD_t erd );
+__attribute__((target(mic))) CIntStatus_t CInt_destroyERD( ERD_t erd );
 
 
-__attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
+__attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet(
+                                       BasisSet_t basis,
                                        ERD_t erd, 
                                        int A,
                                        int B,
@@ -113,7 +116,7 @@ __attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet( BasisSet_t b
                                        double **integrals,
                                        int *nints );
 
-int CInt_getMaxMemory (ERD_t erd);
+__attribute__((target(mic))) int CInt_getMaxMemory (ERD_t erd);
 
 
 #endif /* __CINT_DEF_H__ */

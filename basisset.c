@@ -18,7 +18,6 @@
 #define CARTESIAN    0
 #define SPHERICAL    1
 
-
 static char etable[ELEN][MAXATOMNAME + 1] =
 {
   "H",  "He", "Li", "Be", "B",
@@ -84,13 +83,13 @@ static void normalization (BasisSet_t basis)
 }
 
 
-void _maxMomentum (BasisSet_t basis, int *max_momentum)
+__attribute__((target(mic))) void _maxMomentum (BasisSet_t basis, int *max_momentum)
 {
     *max_momentum = basis->max_momentum;
 }
 
 
-void _maxPrimid (BasisSet_t basis, int *max_primid)
+__attribute__((target(mic))) void _maxPrimid (BasisSet_t basis, int *max_primid)
 {
     *max_primid = basis->max_nexp_id;
 }
@@ -102,13 +101,15 @@ void _maxnumExp (BasisSet_t basis, int *max_nexp)
 }
 
 
-CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
+__attribute__((target(mic))) CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
 {
     BasisSet_t basis;
     basis = (BasisSet_t )malloc (sizeof(struct BasisSet));
     if (NULL == basis)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "memory allocation failed\n");
+#endif
         return CINT_STATUS_ALLOC_FAILED;
     }
     memset (basis, 0, sizeof(struct BasisSet));
@@ -396,7 +397,7 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
 }
 
 
-static CIntStatus_t parse_molecule (BasisSet_t basis)
+static __attribute__((target(mic))) CIntStatus_t parse_molecule (BasisSet_t basis)
 {
     int natoms;
     int nshells;   
@@ -443,7 +444,9 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
         NULL == basis->cc ||
         NULL == basis->exp)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "memory allocation failed\n");
+#endif
         return CINT_STATUS_ALLOC_FAILED;    
     }
     basis->nshells = nshells;
@@ -526,6 +529,12 @@ CIntStatus_t CInt_loadBasisSet (BasisSet_t basis, char *bsfile, char *molfile)
         return ret;
     }
 
+    return CINT_STATUS_SUCCESS;
+}
+
+
+CIntStatus_t CInt_freeInitDataBasisSet (BasisSet_t basis)
+{
     free (basis->eid);
     free (basis->xn);
     free (basis->yn);
@@ -536,7 +545,7 @@ CIntStatus_t CInt_loadBasisSet (BasisSet_t basis, char *bsfile, char *molfile)
     free (basis->ptrshell);
     free (basis->nexp0);
     free (basis->momentum0);
-    
+
     return CINT_STATUS_SUCCESS;
 }
 
@@ -617,7 +626,7 @@ CIntStatus_t CInt_packBasisSet (BasisSet_t basis,
 }
 
 
-CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
+__attribute__((target(mic))) CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
                                   void *buf)
 {
     int offset;
@@ -647,7 +656,9 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
         NULL == basis->ncharge ||
         NULL == basis->eid)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "memory allocation failed\n");
+#endif
         return CINT_STATUS_ALLOC_FAILED;
     }
     memcpy (basis->xn, &(_buf[offset]), sizeof(double) * basis->natoms);
@@ -676,7 +687,9 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
         NULL == basis->momentum0 ||
         NULL == basis->ptrshell)
     {
+#ifndef __INTEL_OFFLOAD
         CINT_PRINTF (1, "memory allocation failed\n");
+#endif
         return CINT_STATUS_ALLOC_FAILED;    
     }
 
@@ -759,3 +772,4 @@ int CInt_getAtomStartInd (BasisSet_t basis, int atomid)
 {
     return (basis->s_start_id[atomid]);
 }
+
