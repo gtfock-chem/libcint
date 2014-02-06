@@ -25,7 +25,7 @@ struct OED
     double *xn;
     double *yn;
     double *zn;
-    double *ncharge;
+    double *charge;
     double *cc;
     double *alpha;
     int cc_beg[2];
@@ -61,20 +61,20 @@ struct BasisSet
     double *xn;
     double *yn;
     double *zn;   
-    double *ncharge;
+    double *charge;
     int nelectrons;
 
     // basis
     int basistype;
     int *eptr;
     int *atom_start;
-    int lenshell0;
-    int totnexp;
-    int *ptrshell;
-    int *nexp0;
-    double *exp0;
-    double *cc0;
-    int *momentum0;
+    int bs_nshells;
+    int bs_totnexp;
+    int *bs_nexp;
+    double **bs_exp;
+    double **bs_cc;
+    double **bs_norm;
+    int *bs_momentum;
     
     // shell
     int nshells;    
@@ -85,6 +85,7 @@ struct BasisSet
     int *nexp;
     double **exp;
     double **cc;
+    double **norm;
     int *momentum;
     double *x;
     double *y;
@@ -95,7 +96,11 @@ struct BasisSet
     int max_nexp;
     int max_nexp_id;
     
-    char str_buf[512];  
+    char str_buf[512];
+
+#ifdef __INTEL_OFFLOAD
+    int mic_numdevs;
+#endif
 };
 
 

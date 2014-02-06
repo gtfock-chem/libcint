@@ -16,20 +16,22 @@ typedef enum
     CINT_STATUS_INVALID_VALUE = 3,
     CINT_STATUS_EXECUTION_FAILED = 4,
     CINT_STATUS_INTERNAL_ERROR = 5,
-    CINT_STATUS_FILEIO_FAILED = 6
+    CINT_STATUS_FILEIO_FAILED = 6,
+    CINT_STATUS_OFFLOAD_ERROR = 7
 } CIntStatus_t;
 
+#ifdef __INTEL_OFFLOAD
+extern __declspec(target(mic)) BasisSet_t basis_mic;
+#endif
 
 // basisset
 // TODO: develop basisset parser
 
-__attribute__((target(mic))) CIntStatus_t CInt_createBasisSet( BasisSet_t *basis );
+CIntStatus_t CInt_createBasisSet( BasisSet_t *basis );
 
 CIntStatus_t CInt_loadBasisSet( BasisSet_t basis,
                                 char *bsfile,
                                 char *xyzfile );
-
-__attribute__((target(mic))) CIntStatus_t CInt_freeInitDataBasisSet (BasisSet_t basis);
 
 CIntStatus_t CInt_destroyBasisSet( BasisSet_t basis );
 
@@ -37,7 +39,7 @@ CIntStatus_t CInt_packBasisSet( BasisSet_t basis,
                                 void **buf,
                                 int *bufsize );
 
-__attribute__((target(mic))) CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
+CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
                                 void *buf);
 
 int CInt_getNumShells( BasisSet_t basis );
@@ -99,15 +101,17 @@ CIntStatus_t CInt_computePairCoreH( BasisSet_t basis,
 
 
 // two electron integrals
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
+#endif
 
-__attribute__((target(mic))) CIntStatus_t CInt_createERD( BasisSet_t basis,
+CIntStatus_t CInt_createERD( BasisSet_t basis,
                              ERD_t *erd );
 
-__attribute__((target(mic))) CIntStatus_t CInt_destroyERD( ERD_t erd );
+CIntStatus_t CInt_destroyERD( ERD_t erd );
 
 
-__attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet(
-                                       BasisSet_t basis,
+CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
                                        ERD_t erd, 
                                        int A,
                                        int B,
@@ -116,7 +120,11 @@ __attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet(
                                        double **integrals,
                                        int *nints );
 
-__attribute__((target(mic))) int CInt_getMaxMemory (ERD_t erd);
+int CInt_getMaxMemory (ERD_t erd);
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
 
 
 #endif /* __CINT_DEF_H__ */

@@ -27,7 +27,7 @@ extern void oed__gener_nai_batch_ (int *imax, int *zmax,
                                    double *x2, double *y2, double *z2,
                                    int *natoms,
                                    double *xn, double *yn, double *zn,
-                                   double *ncharge, double *alpha, double *cc,
+                                   double *charge, double *alpha, double *cc,
                                    int *ccbeg, int *ccend,
                                    int *spheric, int *screen,
                                    int *icore, int *nbatch, int *nfirst, double *zcore);

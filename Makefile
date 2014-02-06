@@ -6,12 +6,6 @@ CFLAGS += -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
 CFLAGS += -D__ALIGNLEN__=${alignlen}
 
-ifeq "${arch}" "hetero"
-CFLAGS += -offload-option,mic,compiler,"-z defs -no-opt-prefetch"
-else
-CFLAGS += -D__ERD_PROFILE__ -offload=none -diag-disable 161,2423
-endif
-
 ifeq "${arch}" "mic"
 LIBCINT = libcint_mic.a
 OBJS0 := $(addsuffix .o, $(basename $(SRC)))

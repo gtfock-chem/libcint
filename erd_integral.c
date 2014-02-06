@@ -8,18 +8,19 @@
 #include "config.h"
 #include "cint_def.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
+
 
 static void erd_max_scratch (BasisSet_t basis, ERD_t erd)
 {
     int max_momentum;
     int max_primid;
     int maxnpgto;
-    
-    _maxMomentum (basis, &max_momentum);
-    _maxPrimid (basis, &max_primid);
 
+    max_momentum = basis->max_momentum;
+    max_primid = basis->max_nexp_id;
     maxnpgto = basis->nexp[max_primid];
         
     if (max_momentum < 2)
@@ -51,12 +52,6 @@ static void erd_max_scratch (BasisSet_t basis, ERD_t erd)
 CIntStatus_t CInt_createERD (BasisSet_t basis, ERD_t *erd)
 {
     ERD_t e;
-    int tid;
-    
-    tid = omp_get_thread_num ();
-    if (tid == 0)
-        printf ("@@@ Optimized ERD code!!\n");
-    
     e = (ERD_t)calloc (1, sizeof(struct ERD));
     if (NULL == e)
     {
@@ -65,7 +60,6 @@ CIntStatus_t CInt_createERD (BasisSet_t basis, ERD_t *erd)
 #endif
         return CINT_STATUS_ALLOC_FAILED;
     }
-
     erd_max_scratch (basis, e);
     e->zcore = (double *)ALIGNED_MALLOC (e->fp_memory_opt * sizeof(double));
     e->icore = (int *)ALIGNED_MALLOC (e->int_memory_opt * sizeof(int));   
@@ -94,7 +88,7 @@ CIntStatus_t CInt_destroyERD (ERD_t erd)
 }
 
 
-__attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
+CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
                                         int A, int B, int C, int D,
                                         double **integrals, int *nints)
 {
@@ -139,6 +133,8 @@ __attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet ( BasisSet_t 
                          basis->exp[C], basis->exp[D],
                          basis->cc[A], basis->cc[B],
                          basis->cc[C], basis->cc[D],
+                         basis->norm[A], basis->norm[B],
+                         basis->norm[C], basis->norm[D],
                          ERD_SCREEN, erd->icore,
                          nints, &nfirst, erd->zcore);
     }
@@ -155,6 +151,8 @@ __attribute__((target(mic))) CIntStatus_t CInt_computeShellQuartet ( BasisSet_t 
                     basis->exp[C], basis->exp[D],
                     basis->cc[A], basis->cc[B],
                     basis->cc[C], basis->cc[D],
+                    basis->norm[A], basis->norm[B],
+                    basis->norm[C], basis->norm[D],
                     ERD_SPHERIC, ERD_SCREEN, erd->icore,
                     nints, &nfirst, erd->zcore);
     }
@@ -170,4 +168,7 @@ int CInt_getMaxMemory (ERD_t erd)
     return (erd->fp_memory_opt + erd->int_memory_opt);
 }
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

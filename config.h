@@ -33,7 +33,7 @@
             if ( (unsigned)(level) <= _DEBUG_LEVEL_ )                               \
             {                                                                       \
                 sprintf( basis->str_buf, "%s() line %d ", __FUNCTION__, __LINE__ ); \
-                sprintf( basis->str_buf + strlen(basis->str_buf), fmt, ##args );      \
+                sprintf( basis->str_buf + strlen(basis->str_buf), fmt, ##args );    \
                 fprintf( stdout, "%s", basis->str_buf );                            \
                 fflush( stdout );                                                   \
             }                                                                       \

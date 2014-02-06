@@ -8,7 +8,10 @@
 
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                             int npgto3, int npgto4,
@@ -21,7 +24,9 @@ extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                             double *alpha1, double *alpha2,
                             double *alpha3, double *alpha4,
                             double *cc1, double *cc2,
-                            double *cc3, double *cc4, int screen,
+                            double *cc3, double *cc4,
+                            double *norm1, double *norm2,
+                            double *norm3, double *norm4,  int screen,
                             int *icore, int *nbatch,
                             int *nfirst, double *zcore);
 
@@ -36,7 +41,9 @@ extern int erd__csgto (int zmax, int npgto1, int npgto2,
                        double *alpha1, double *alpha2,
                        double *alpha3, double *alpha4,
                        double *cc1, double *cc2,
-                       double *cc3, double *cc4,
+                       double *cc3, double *cc4,                      
+                       double *norm1, double *norm2,
+                       double *norm3, double *norm4,
                        int spheric, int screen, int *icore,
                        int *nbatch, int *nfirst, double *zcore);
 
@@ -59,7 +66,9 @@ extern int erd__memory_csgto (int npgto1, int npgto2,
                               double x4, double y4, double z4,
                               int spheric, int *iopt, int *zopt);
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif
+
 
 #endif /* __ERD_INTEGRAL_H__ */

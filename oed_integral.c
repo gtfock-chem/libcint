@@ -131,7 +131,7 @@ CIntStatus_t CInt_createOED (BasisSet_t basis, OED_t *oed)
     o->xn = basis->xn;
     o->yn = basis->yn;
     o->zn = basis->zn;
-    o->ncharge = basis->ncharge;
+    o->charge = basis->charge;
     o->spheric = OED_SPHERIC;
     o->screen = OED_SCREEN;
     
@@ -328,7 +328,7 @@ CIntStatus_t CInt_computePairPot (BasisSet_t basis, OED_t oed,
                            &(oed->x2), &(oed->y2), &(oed->z2),
                            &(oed->natoms),
                            oed->xn, oed->yn, oed->zn,
-                           oed->ncharge, oed->alpha, oed->cc,
+                           oed->charge, oed->alpha, oed->cc,
                            oed->cc_beg, oed->cc_end,
                            &(oed->spheric), &(oed->screen),
                            oed->icore, nints, &nfirst, oed->zcore);
@@ -408,7 +408,7 @@ CIntStatus_t CInt_computePairCoreH (BasisSet_t basis, OED_t oed,
                            &(oed->x2), &(oed->y2), &(oed->z2),
                            &(oed->natoms),
                            oed->xn, oed->yn, oed->zn,
-                           oed->ncharge, oed->alpha, oed->cc,
+                           oed->charge, oed->alpha, oed->cc,
                            oed->cc_beg, oed->cc_end,
                            &(oed->spheric), &(oed->screen),
                            oed->icore, &ni, &nfirst, oed->zcore);
