@@ -44,8 +44,6 @@ static void erd_max_scratch (BasisSet_t basis, ERD_t erd)
                            &(erd->int_memory_opt),
                            &(erd->fp_memory_opt));
     }
-    
-    printf ("max = %d %d\n", erd->int_memory_opt, erd->fp_memory_opt);
 }
 
 
