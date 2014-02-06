@@ -20,7 +20,7 @@ all: ${LIBCINT}
 
 ${LIBCINT}: ${OBJS}
 	${AR} $@ $^
-	cp -r $@ ../lib/
+	cp -r *.a ../lib/
 	sh genheader.sh
 
 %.o : %.c Makefile
