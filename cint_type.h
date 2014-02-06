@@ -65,9 +65,10 @@ struct BasisSet
     int nelectrons;
 
     // basis
+    int bs_natoms;
     int basistype;
-    int *eptr;
-    int *atom_start;
+    int *bs_eptr;
+    int *bs_atom_start;
     int bs_nshells;
     int bs_totnexp;
     int *bs_nexp;

@@ -163,8 +163,8 @@ static CIntStatus_t _destroyBasisSet (BasisSet_t basis)
     free (basis->yn);
     free (basis->zn);   
     free (basis->charge);
-    free (basis->eptr);
-    free (basis->atom_start);
+    free (basis->bs_eptr);
+    free (basis->bs_atom_start);
     free (basis->bs_nexp);
     free (basis->bs_momentum);
     free (basis->cc);
@@ -198,8 +198,8 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
     for (i = 0; i < natoms; i++)
     {
         eid = basis->eid[i];
-        atom_start = basis->atom_start[basis->eptr[eid]];
-        atom_end = basis->atom_start[basis->eptr[eid] + 1];
+        atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
+        atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
         nshells += atom_end - atom_start;
     }
     basis->s_start_id = (int *)malloc (sizeof(int) * (natoms + 1));
@@ -241,9 +241,9 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
     max_nexp_id = 0;
     for (i = 0; i < natoms; i++)
     {
-        eid = basis->eid[i];        
-        atom_start = basis->atom_start[basis->eptr[eid]];
-        atom_end = basis->atom_start[basis->eptr[eid] + 1];
+        eid = basis->eid[i];    
+        atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
+        atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
         basis->s_start_id[i] = nshells;
         for (j = atom_start; j < atom_end; j++)
         {
@@ -300,8 +300,9 @@ static CIntStatus_t _packBasisSet (BasisSet_t basis,
     int i;
     int nexp;
     
-    _bufsize = 5 * sizeof(int) + 4 * basis->natoms * sizeof(double) +                
-               (2 * basis->bs_nshells + ELEN + 2 *basis->natoms + 1) * sizeof(int) +
+    _bufsize = 6 * sizeof(int) + 4 * basis->natoms * sizeof(double) +                
+               (2 * basis->bs_nshells + ELEN + basis->natoms
+                + basis->bs_natoms + 1) * sizeof(int) +
                 basis->bs_totnexp * 3 * sizeof(double);
     _buf = (char *)malloc (_bufsize);
     assert (_buf != NULL);
@@ -309,6 +310,8 @@ static CIntStatus_t _packBasisSet (BasisSet_t basis,
     memcpy (&(_buf[offset]), &(basis->natoms), sizeof(int));
     offset += sizeof(int);
     memcpy (&(_buf[offset]), &(basis->nelectrons), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), &(basis->bs_natoms), sizeof(int));
     offset += sizeof(int);
     memcpy (&(_buf[offset]), &(basis->basistype), sizeof(int));
     offset += sizeof(int);
@@ -340,10 +343,10 @@ static CIntStatus_t _packBasisSet (BasisSet_t basis,
         offset += sizeof(double) * nexp;
     }
 
-    memcpy (&(_buf[offset]), basis->eptr, sizeof(int) * ELEN);
+    memcpy (&(_buf[offset]), basis->bs_eptr, sizeof(int) * ELEN);
     offset += sizeof(int) * ELEN;
-    memcpy (&(_buf[offset]), basis->atom_start, sizeof(int) * (basis->natoms + 1));
-    offset += sizeof(int) * (basis->natoms + 1);   
+    memcpy (&(_buf[offset]), basis->bs_atom_start, sizeof(int) * (basis->bs_natoms + 1));
+    offset += sizeof(int) * (basis->bs_natoms + 1);
     memcpy (&(_buf[offset]), basis->bs_momentum, sizeof(int) * basis->bs_nshells);
     offset += sizeof(int) * basis->bs_nshells;
     
@@ -369,6 +372,8 @@ static CIntStatus_t _unpackBasisSet (BasisSet_t basis,
     memcpy (&(basis->natoms), &(_buf[offset]), sizeof(int));
     offset += sizeof(int);
     memcpy (&(basis->nelectrons), &(_buf[offset]), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(basis->bs_natoms), &(_buf[offset]), sizeof(int));
     offset += sizeof(int);
     memcpy (&(basis->basistype), &(_buf[offset]), sizeof(int));
     offset += sizeof(int);
@@ -405,12 +410,12 @@ static CIntStatus_t _unpackBasisSet (BasisSet_t basis,
     basis->bs_cc = (double **)malloc (sizeof(double *) * basis->bs_nshells);
     basis->bs_exp = (double **)malloc (sizeof(double *) * basis->bs_nshells);
     basis->bs_norm = (double **)malloc (sizeof(double *) * basis->bs_nshells);
-    basis->eptr = (int *)malloc (sizeof(int) * ELEN);
-    basis->atom_start = (int *)malloc (sizeof(int) * (basis->natoms + 1)); 
+    basis->bs_eptr = (int *)malloc (sizeof(int) * ELEN);
+    basis->bs_atom_start = (int *)malloc (sizeof(int) * (basis->bs_natoms + 1)); 
     basis->bs_momentum = (int *)malloc (sizeof(int) * basis->bs_nshells);
     basis->bs_nexp = (int *)malloc (sizeof(int) * basis->bs_nshells);
-    if (NULL == basis->atom_start ||
-        NULL == basis->eptr ||
+    if (NULL == basis->bs_atom_start ||
+        NULL == basis->bs_eptr ||
         NULL == basis->bs_nexp ||
         NULL == basis->bs_cc ||
         NULL == basis->bs_norm ||
@@ -447,12 +452,13 @@ static CIntStatus_t _unpackBasisSet (BasisSet_t basis,
         memcpy (basis->bs_norm[i], &(_buf[offset]), sizeof(double) * nexp);
         offset += sizeof(double) * nexp;
     }
-    memcpy (basis->eptr, &(_buf[offset]), sizeof(int) * ELEN);
+    memcpy (basis->bs_eptr, &(_buf[offset]), sizeof(int) * ELEN);
     offset += sizeof(int) * ELEN;
-    memcpy (basis->atom_start, &(_buf[offset]), sizeof(int) * (basis->natoms + 1));
-    offset += sizeof(int) * (basis->natoms + 1);    
+    memcpy (basis->bs_atom_start, &(_buf[offset]), sizeof(int) * (basis->bs_natoms + 1));
+    offset += sizeof(int) * (basis->bs_natoms + 1);
     memcpy (basis->bs_momentum, &(_buf[offset]), sizeof(int) * basis->bs_nshells);
     offset += sizeof(int) * basis->bs_nshells;
+    
     if ((ret = parse_molecule (basis)) != CINT_STATUS_SUCCESS)
     {
         return ret;
@@ -631,17 +637,18 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
             }
          }
     }
+    basis->bs_natoms = natoms;
     basis->bs_nshells = nshells;
     basis->bs_totnexp = bs_totnexp;
-    basis->eptr = (int *)malloc (sizeof(int) * ELEN);
-    basis->atom_start = (int *)malloc (sizeof(int) * (natoms + 1));
+    basis->bs_eptr = (int *)malloc (sizeof(int) * ELEN);
+    basis->bs_atom_start = (int *)malloc (sizeof(int) * (natoms + 1));
     basis->bs_nexp = (int *)malloc (sizeof(int) * nshells);
     basis->bs_cc = (double **)malloc (sizeof(double *) * nshells);
     basis->bs_norm = (double **)malloc (sizeof(double *) * nshells);
     basis->bs_exp = (double **)malloc (sizeof(double *) * nshells);
     basis->bs_momentum = (int *)malloc (sizeof(int) * nshells);
-    if (NULL == basis->atom_start ||
-        NULL == basis->eptr ||
+    if (NULL == basis->bs_atom_start ||
+        NULL == basis->bs_eptr ||
         NULL == basis->bs_nexp ||
         NULL == basis->bs_cc ||
         NULL == basis->bs_exp ||
@@ -653,7 +660,7 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
     }
     for (i = 0; i < ELEN; i++)
     {
-        basis->eptr[i] = -1;
+        basis->bs_eptr[i] = -1;
     }
     
     // get nshells
@@ -672,7 +679,7 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
             {
                 if (strcmp (str, etable[i]) == 0)
                 {
-                    basis->eptr[i + 1] = natoms;
+                    basis->bs_eptr[i] = natoms;
                     break;
                 }
             }
@@ -681,7 +688,7 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
                 CINT_PRINTF (1, "atom %s in %s is not supported\n", str, file);
                 return CINT_STATUS_INVALID_VALUE;
             }
-            basis->atom_start[natoms] = nshells;           
+            basis->bs_atom_start[natoms] = nshells;           
             natoms++;
             // read shells
             while (fgets (line, 1024, fp) != NULL)
@@ -750,7 +757,7 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
             }
          }
     }
-    basis->atom_start[natoms] = nshells;
+    basis->bs_atom_start[natoms] = nshells;
     if (nshells != basis->bs_nshells || basis->bs_totnexp != bs_totnexp)
     {
         CINT_PRINTF (1, "file %s has a wrong format\n", file);

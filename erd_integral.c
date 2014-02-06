@@ -119,9 +119,9 @@ CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd,
     shell4 = basis->momentum[D];
     maxshell = MAX(shell1, shell2);
     maxshell = MAX(maxshell, shell3);
-    maxshell = MAX(maxshell, shell4);     
+    maxshell = MAX(maxshell, shell4);
     if (maxshell < 2)
-    {
+    {        
 	    erd__1111_csgto (erd->zmax, basis->nexp[A], basis->nexp[B],
                          basis->nexp[C], basis->nexp[D],
                          shell1, shell2, shell3, shell4,
