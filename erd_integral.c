@@ -72,6 +72,7 @@ static CIntStatus_t create_vrrtable (BasisSet_t basis, ERD_t erd)
     int shella;
     
     max_shella = basis->max_momentum + 1;
+    erd->max_shella = max_shella;
     tablesize = 2 * max_shella * max_shella;        
     vrrtable = (int **)malloc (sizeof(int *) * tablesize);
     if (NULL == vrrtable)
@@ -81,14 +82,15 @@ static CIntStatus_t create_vrrtable (BasisSet_t basis, ERD_t erd)
 #endif
         return CINT_STATUS_ALLOC_FAILED;
     }
-    for (shella = 2; shella < max_shella; shella++)
+    for (shella = 0; shella < max_shella; shella++)
     {
-        for (shellp = 2; shellp < 2 * max_shella; shellp++)
+        for (shellp = shella; shellp < 2 * max_shella; shellp++)
         {
             i = shella * 2 * max_shella + shellp;
             nxyzq = (shellp + 1) * (shellp + 2) / 2;
             nxyzft = (shellp + 1) * (shellp + 2) * (shellp + 3) / 6 -
-                     shella * (shella + 1) * (shella + 2) / 6;            
+                     shella * (shella + 1) * (shella + 2) / 6;
+            
             vrrtable[i] = (int *)ALIGNED_MALLOC (sizeof(int) * 4 * nxyzft);
             if (NULL == vrrtable[i])
             {
@@ -112,14 +114,14 @@ static CIntStatus_t create_vrrtable (BasisSet_t basis, ERD_t erd)
                     idx = xyfp;
                     for (sf = shellp; sf >= sfend; --sf)
                     {
-                        zf = sf - xyf;  
-                        idx = idx - nxyzf + xf;
-                        nxyzf = nxyzf - sf - 1;
+                        zf = sf - xyf;                       
                         vrrtable[i][count + 0] = xf;
                         vrrtable[i][count + 1] = yf;
                         vrrtable[i][count + 2] = zf;
                         vrrtable[i][count + 3] = idx;
                         count += 4;
+                        idx = idx - nxyzf + xf;
+                        nxyzf = nxyzf - sf - 1;
                     }
                 }
             }            
@@ -139,16 +141,15 @@ static CIntStatus_t destroy_vrrtable (ERD_t erd)
     int j;
     int idx;
         
-    for (i = 2; i < max_shella; i++)
+    for (i = 0; i < max_shella; i++)
     {
-        for (j = 2; j < 2 * max_shella; i++)
+        for (j = i; j < 2 * max_shella; j++)
         {
             idx = i * 2 * max_shella + j;
             ALIGNED_FREE (erd->vrrtable[idx]);
         }
     }
     free (erd->vrrtable);
-
     return CINT_STATUS_SUCCESS;
 }
 
@@ -210,7 +211,11 @@ CIntStatus_t CInt_createERD (BasisSet_t basis, ERD_t *erd, int nthreads)
     {
         return status;
     }
-
+    CINT_INFO ("totally use %.3lf MB (%.3lf MB per thread)",
+        (e->fp_memory_opt * sizeof(double)
+        + e->int_memory_opt * sizeof(int)) * nthreads/1024.0/1024.0,
+        (e->fp_memory_opt * sizeof(double)
+        + e->int_memory_opt * sizeof(int))/1024.0/1024.0);
     *erd = e;
     return CINT_STATUS_SUCCESS;
 }
@@ -310,8 +315,10 @@ CIntStatus_t CInt_computeShellQuartet ( BasisSet_t basis, ERD_t erd, int tid,
                     basis->cc[C], basis->cc[D],
                     basis->norm[A], basis->norm[B],
                     basis->norm[C], basis->norm[D],
-                    ERD_SPHERIC, ERD_SCREEN, erd->icore[tid],
-                    nints, &nfirst, erd->zcore[tid]);
+                    erd->vrrtable, 2 * erd->max_shella,
+                    ERD_SPHERIC, ERD_SCREEN,
+                    erd->icore[tid], nints,
+                    &nfirst, erd->zcore[tid]);
     }
 
     *integrals = &(erd->zcore[tid][nfirst - 1]);

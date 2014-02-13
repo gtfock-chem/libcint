@@ -41,9 +41,10 @@ extern int erd__csgto (int zmax, int npgto1, int npgto2,
                        double *alpha1, double *alpha2,
                        double *alpha3, double *alpha4,
                        double *cc1, double *cc2,
-                       double *cc3, double *cc4,                      
+                       double *cc3, double *cc4,                    
                        double *norm1, double *norm2,
                        double *norm3, double *norm4,
+                       int **vrrtab, int ldvrrtab,
                        int spheric, int screen, int *icore,
                        int *nbatch, int *nfirst, double *zcore);
 
