@@ -45,11 +45,13 @@ struct OED
 
 struct ERD
 {
-    int zmax;
-    int *icore;
-    double *zcore;
-    int fp_memory_opt;
+    int nthreads;
     int int_memory_opt;
+    int **icore;
+    int fp_memory_opt;
+    double **zcore;    
+    int max_shella;
+    int **vrrtable;
 };
 
 

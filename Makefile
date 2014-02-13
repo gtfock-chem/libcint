@@ -16,6 +16,7 @@ LIBCINT = libcint.a
 OBJS := $(addsuffix .o, $(basename $(SRC)))
 endif
 
+
 all: ${LIBCINT}
 
 ${LIBCINT}: ${OBJS}

@@ -106,13 +106,15 @@ CIntStatus_t CInt_computePairCoreH( BasisSet_t basis,
 #endif
 
 CIntStatus_t CInt_createERD( BasisSet_t basis,
-                             ERD_t *erd );
+                             ERD_t *erd,
+                             int nthreads );
 
 CIntStatus_t CInt_destroyERD( ERD_t erd );
 
 
 CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
-                                       ERD_t erd, 
+                                       ERD_t erd,
+                                       int tid,
                                        int A,
                                        int B,
                                        int C,
