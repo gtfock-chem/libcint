@@ -917,12 +917,26 @@ int CInt_getNumAtoms (BasisSet_t basis)
 }
 
 
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
+#endif
+
 int CInt_getShellDim (BasisSet_t basis, int shellid)
 {
     return (basis->f_end_id[shellid] -
         basis->f_start_id[shellid] + 1);
 }
 
+
+int CInt_getFuncStartInd (BasisSet_t basis, int shellid)
+{
+    return (basis->f_start_id[shellid]);
+}
+
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
 
 int CInt_getMaxShellDim (BasisSet_t basis)
 {
@@ -933,12 +947,6 @@ int CInt_getMaxShellDim (BasisSet_t basis)
 int CInt_getNumOccOrb (BasisSet_t basis)
 {
     return (basis->nelectrons/2);
-}
-
-
-int CInt_getFuncStartInd (BasisSet_t basis, int shellid)
-{
-    return (basis->f_start_id[shellid]);
 }
 
 

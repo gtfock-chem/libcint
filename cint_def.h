@@ -48,15 +48,9 @@ int CInt_getNumFuncs( BasisSet_t basis );
 
 int CInt_getNumAtoms( BasisSet_t basis );
 
-int CInt_getShellDim( BasisSet_t basis,
-                      int shellid );
-
 int CInt_getMaxShellDim( BasisSet_t basis );
 
 int CInt_getNumOccOrb( BasisSet_t basis );
-
-int CInt_getFuncStartInd( BasisSet_t basis,
-                          int shellid );
 
 int CInt_getFuncEndInd( BasisSet_t basis,
                         int shellid );
@@ -104,6 +98,12 @@ CIntStatus_t CInt_computePairCoreH( BasisSet_t basis,
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
 #endif
+
+int CInt_getShellDim( BasisSet_t basis,
+                      int shellid );
+
+int CInt_getFuncStartInd( BasisSet_t basis,
+                          int shellid );
 
 CIntStatus_t CInt_createERD( BasisSet_t basis,
                              ERD_t *erd,
