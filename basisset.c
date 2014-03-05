@@ -487,19 +487,23 @@ static CIntStatus_t import_molecule (char *file, BasisSet_t basis)
     }
 
     // number of atoms    
-    while (fgets (line, 1024, fp) != NULL)
+    if (fgets (line, 1024, fp) != NULL)
     {
-        sscanf (line, "%s", str);
-        if (isalnum(str[0]) && !isalpha(str[0]))
-        {
-            break;
-        }
+        CINT_PRINTF (1, "file %s has a wrong format\n", file);
+        return CINT_STATUS_FILEIO_FAILED; 
     }
-    sscanf (line, "%d", &(basis->natoms));
+    sscanf (line, "%d", &(basis->natoms));    
     if (basis->natoms <= 0)
     {
         CINT_PRINTF (1, "file %s has a wrong format\n", file);
         return CINT_STATUS_FILEIO_FAILED;
+    }
+    
+    // skip comment line
+    if (fgets (line, 1024, fp) != NULL)
+    {
+        CINT_PRINTF (1, "file %s has a wrong format\n", file);
+        return CINT_STATUS_FILEIO_FAILED; 
     }
     
     basis->xn = (double *)malloc (sizeof(double) * basis->natoms);
