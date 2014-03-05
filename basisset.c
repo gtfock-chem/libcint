@@ -487,7 +487,7 @@ static CIntStatus_t import_molecule (char *file, BasisSet_t basis)
     }
 
     // number of atoms    
-    if (fgets (line, 1024, fp) != NULL)
+    if (fgets (line, 1024, fp) == NULL)
     {
         CINT_PRINTF (1, "file %s has a wrong format\n", file);
         return CINT_STATUS_FILEIO_FAILED; 
@@ -498,9 +498,9 @@ static CIntStatus_t import_molecule (char *file, BasisSet_t basis)
         CINT_PRINTF (1, "file %s has a wrong format\n", file);
         return CINT_STATUS_FILEIO_FAILED;
     }
-    
+        
     // skip comment line
-    if (fgets (line, 1024, fp) != NULL)
+    if (fgets (line, 1024, fp) == NULL)
     {
         CINT_PRINTF (1, "file %s has a wrong format\n", file);
         return CINT_STATUS_FILEIO_FAILED; 
