@@ -90,9 +90,7 @@ struct BasisSet
     double **cc;
     double **norm;
     int *momentum;
-    double *x;
-    double *y;
-    double *z;
+    double *xyz0;
 
     int maxdim; // max number of functions of a shell 
     int max_momentum;

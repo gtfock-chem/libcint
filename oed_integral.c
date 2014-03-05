@@ -31,12 +31,12 @@ static void config_oed (OED_t  oed, int A, int B, BasisSet_t basis)
     oed->npgto2 = basis->nexp[B];
     oed->cc_end[0] = oed->npgto1;
     oed->cc_end[1] = oed->npgto2;    
-    oed->x1 = basis->x[A];
-    oed->y1 = basis->y[A];
-    oed->z1 = basis->z[A];
-    oed->x2 = basis->x[B];
-    oed->y2 = basis->y[B];
-    oed->z2 = basis->z[B];
+    oed->x1 = basis->xyz0[A*4];
+    oed->y1 = basis->xyz0[A*4+1];
+    oed->z1 = basis->xyz0[A*4+2];
+    oed->x2 = basis->xyz0[B*4];
+    oed->y2 = basis->xyz0[B*4+1];
+    oed->z2 = basis->xyz0[B*4+2];
     oed->shell1 = basis->momentum[A];
     oed->shell2 = basis->momentum[B];
 }

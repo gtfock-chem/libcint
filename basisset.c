@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 #include <math.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -11,7 +12,6 @@
 
 #include "config.h"
 #include "basisset.h"
-
 
 #define ELEN         50
 #define SLEN         5
@@ -205,9 +205,7 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
     basis->s_start_id = (int *)malloc (sizeof(int) * (natoms + 1));
     basis->f_start_id = (int *)malloc (sizeof(int) * nshells);
     basis->f_end_id = (int *)malloc (sizeof(int) * nshells);
-    basis->x = (double *)malloc (sizeof(double) * nshells);
-    basis->y = (double *)malloc (sizeof(double) * nshells);
-    basis->z = (double *)malloc (sizeof(double) * nshells);
+    basis->xyz0 = (double *)memalign(32, sizeof(double) * nshells * 4);
     basis->nexp = (int *)malloc (sizeof(int) * nshells);
     basis->cc = (double **)malloc (sizeof(double *) * nshells);
     basis->exp = (double **)malloc (sizeof(double *) * nshells);
@@ -216,9 +214,7 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
     if (NULL == basis->f_start_id ||
         NULL == basis->f_end_id ||
         NULL == basis->s_start_id ||
-        NULL == basis->x ||
-        NULL == basis->y ||
-        NULL == basis->z ||
+        NULL == basis->xyz0 ||
         NULL == basis->nexp ||
         NULL == basis->momentum ||
         NULL == basis->cc ||
@@ -249,9 +245,9 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
         {
             basis->f_start_id[nshells + j - atom_start] = nfunctions;
             basis->nexp[nshells + j - atom_start] = basis->bs_nexp[j];
-            basis->x[nshells + j - atom_start] = basis->xn[i];
-            basis->y[nshells + j - atom_start] = basis->yn[i];
-            basis->z[nshells + j - atom_start] = basis->zn[i];
+            basis->xyz0[(nshells + j - atom_start) * 4 + 0] = basis->xn[i];
+            basis->xyz0[(nshells + j - atom_start) * 4 + 1] = basis->yn[i];
+            basis->xyz0[(nshells + j - atom_start) * 4 + 2] = basis->zn[i];
             basis->momentum[nshells + j - atom_start] = basis->bs_momentum[j];
             max_momentum = (max_momentum > basis->bs_momentum[j] ?
                 max_momentum : basis->bs_momentum[j]);
