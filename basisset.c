@@ -917,6 +917,18 @@ int CInt_getNumAtoms (BasisSet_t basis)
 }
 
 
+void CInt_getShellxyz ( BasisSet_t basis,
+                        int shellid,
+                        double *x,
+                        double *y,
+                        double *z )
+{
+    *x = basis->xyz0[shellid*4 + 0];
+    *y = basis->xyz0[shellid*4 + 1];
+    *z = basis->xyz0[shellid*4 + 2];
+}
+
+
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
 #endif

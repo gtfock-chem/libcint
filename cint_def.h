@@ -93,6 +93,12 @@ CIntStatus_t CInt_computePairCoreH( BasisSet_t basis,
                                     double **integrals,
                                     int *nints );
 
+void CInt_getShellxyz ( BasisSet_t basis,
+                        int shellid,
+                        double *x,
+                        double *y,
+                        double *z );
+
 
 // two electron integrals
 #ifdef __INTEL_OFFLOAD
