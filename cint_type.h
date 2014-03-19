@@ -1,6 +1,7 @@
-#ifndef __CINT_TYPE_H__
-#define __CINT_TYPE_H__
+#pragma once
 
+#include <stdint.h>
+#include <stdbool.h>
 
 struct OED
 {
@@ -45,15 +46,17 @@ struct OED
 
 struct ERD
 {
-    int nthreads;
-    int int_memory_opt;
+    /* The number of threads used for computation */
+    uint32_t nthreads;
+    size_t int_memory_opt;
     int **icore;
-    int fp_memory_opt;
+    size_t fp_memory_opt;
     double **zcore;    
+    /* Used for vrrtable */
     int max_shella;
+    /* 2D array */
     int **vrrtable;
 };
-
 
 struct BasisSet
 {
@@ -103,6 +106,3 @@ struct BasisSet
     int mic_numdevs;
 #endif
 };
-
-
-#endif /* __CINT_TYPE_H__ */

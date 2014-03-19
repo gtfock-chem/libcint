@@ -1,8 +1,9 @@
-#ifndef __ERD_INTEGRAL_H__
-#define __ERD_INTEGRAL_H__
+#pragma once
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-
-#define ERD_SCREEN  1
+#define ERD_SCREEN true
 #define ERD_SPHERIC 1
 
 
@@ -13,63 +14,42 @@
 #pragma offload_attribute(push, target(mic))
 #endif
 
-extern int erd__1111_csgto (int zmax, int npgto1, int npgto2,
-                            int npgto3, int npgto4,
-                            int shell1, int shell2,
-                            int shell3, int shell4,
-                            double x1, double y1, double z1,
-                            double x2, double y2, double z2,
-                            double x3, double y3, double z3,
-                            double x4, double y4, double z4,
-                            double *alpha1, double *alpha2,
-                            double *alpha3, double *alpha4,
-                            double *cc1, double *cc2,
-                            double *cc3, double *cc4,
-                            double *norm1, double *norm2,
-                            double *norm3, double *norm4,  int screen,
-                            int *icore, int *nbatch,
-                            int *nfirst, double *zcore);
+extern void erd__1111_csgto(
+    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    bool atomic,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    const double alpha1[restrict static npgto1], const double alpha2[restrict static npgto2], const double alpha3[restrict static npgto3], const double alpha4[restrict static npgto4],
+    const double cc1[restrict static npgto1], const double cc2[restrict static npgto2], const double cc3[restrict static npgto3], const double cc4[restrict static npgto4],
+    const double norm1[restrict static npgto1], const double norm2[restrict static npgto2], const double norm3[restrict static npgto3], const double norm4[restrict static npgto4],
+    uint32_t integrals_count[restrict static 1], double integrals_ptr[restrict static 81]);
 
-extern int erd__csgto (int zmax, int npgto1, int npgto2,
-                       int npgto3, int npgto4,
-                       int shell1, int shell2,
-                       int shell3, int shell4,
-                       double x1, double y1, double z1,
-                       double x2, double y2, double z2,
-                       double x3, double y3, double z3,
-                       double x4, double y4, double z4,
-                       double *alpha1, double *alpha2,
-                       double *alpha3, double *alpha4,
-                       double *cc1, double *cc2,
-                       double *cc3, double *cc4,                    
-                       double *norm1, double *norm2,
-                       double *norm3, double *norm4,
-                       int **vrrtab, int ldvrrtab,
-                       int spheric, int screen, int *icore,
-                       int *nbatch, int *nfirst, double *zcore);
+extern void erd__csgto(
+    bool atomic,
+    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    const double alpha1[restrict static npgto1], const double alpha2[restrict static npgto2], const double alpha3[restrict static npgto3], const double alpha4[restrict static npgto4],
+    const double cc1[restrict static npgto1], const double cc2[restrict static npgto2], const double cc3[restrict static npgto3], const double cc4[restrict static npgto4],
+    const double norm1[restrict static npgto1], const double norm2[restrict static npgto2], const double norm3[restrict static npgto3], const double norm4[restrict static npgto4],
+    int **vrrtab, int ldvrrtab,
+    bool spheric,
+    uint32_t buffer_capacity, uint32_t output_length[restrict static 1], double output_buffer[restrict static 1]);
 
-extern int erd__memory_1111_csgto (int npgto1, int npgto2,
-                                   int npgto3, int npgto4,
-                                   int shell1, int shell2,
-                                   int shell3, int shell4,
-                                   double x1, double y1, double z1,
-                                   double x2, double y2, double z2,
-                                   double x3, double y3, double z3,
-                                   double x4, double y4, double z4,
-                                   int *iopt, int *zopt);
-
-extern int erd__memory_csgto (int npgto1, int npgto2,
-                              int npgto3, int npgto4,
-                              int shell1, int shell2, int shell3, int shell4,
-                              double x1, double y1, double z1,
-                              double x2, double y2, double z2,
-                              double x3, double y3, double z3,
-                              double x4, double y4, double z4,
-                              int spheric, int *iopt, int *zopt);
+extern void erd__memory_csgto(uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    bool spheric, size_t *iopt, size_t *zopt);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
-
-
-#endif /* __ERD_INTEGRAL_H__ */

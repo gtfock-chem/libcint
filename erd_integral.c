@@ -13,24 +13,14 @@
 #endif
 
 
-static void erd_max_scratch(BasisSet_t basis, ERD_t erd)
-{
-    int max_momentum;
-    int max_primid;
-    int maxnpgto;
-
-    max_momentum = basis->max_momentum;
-    max_primid = basis->max_nexp_id;
-    maxnpgto = basis->nexp[max_primid];
+static void erd_max_scratch(BasisSet_t basis, ERD_t erd) {
+    const int max_momentum = basis->max_momentum;
+    const int max_primid = basis->max_nexp_id;
+    const int maxnpgto = basis->nexp[max_primid];
         
     if (max_momentum < 2) {
-        erd__memory_1111_csgto(maxnpgto, maxnpgto, maxnpgto, maxnpgto,
-            max_momentum, max_momentum,
-            max_momentum, max_momentum,
-            1.0, 1.0, 1.0, 2.0, 2.0, 2.0,
-            3.0, 3.0, 3.0, 4.0, 4.0, 4.0,
-            &(erd->int_memory_opt),
-            &(erd->fp_memory_opt));
+        erd->int_memory_opt = 0;
+        erd->fp_memory_opt = 81;
     } else {
         erd__memory_csgto(maxnpgto, maxnpgto, maxnpgto, maxnpgto,
             max_momentum, max_momentum,
@@ -211,16 +201,17 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
     }
 #endif
 
-    const int shell1 = basis->momentum[A];
-    const int shell2 = basis->momentum[B];
-    const int shell3 = basis->momentum[C];
-    const int shell4 = basis->momentum[D];
-    const int maxshell = MAX(MAX(shell1, shell2), MAX(shell3, shell4));
-    int nfirst;
-    if (maxshell < 2) {        
-        erd__1111_csgto(erd->fp_memory_opt,
+    const uint32_t shell1 = basis->momentum[A];
+    const uint32_t shell2 = basis->momentum[B];
+    const uint32_t shell3 = basis->momentum[C];
+    const uint32_t shell4 = basis->momentum[D];
+    const uint32_t orshell = shell1 | shell2 | shell3 | shell4;
+    const bool atomic = ((A ^ B) | (B ^ C) | (C ^ D)) == 0;
+    if (orshell < 2) {
+        uint32_t integrals_count = 0;
+        erd__1111_csgto(
             basis->nexp[A], basis->nexp[B], basis->nexp[C], basis->nexp[D],
-            shell1, shell2, shell3, shell4,
+            shell1, shell2, shell3, shell4, atomic,
             basis->xyz0[A*4], basis->xyz0[A*4+1], basis->xyz0[A*4+2],
             basis->xyz0[B*4], basis->xyz0[B*4+1], basis->xyz0[B*4+2],
             basis->xyz0[C*4], basis->xyz0[C*4+1], basis->xyz0[C*4+2],
@@ -228,10 +219,11 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
             basis->exp[A], basis->exp[B], basis->exp[C], basis->exp[D],
             basis->cc[A], basis->cc[B], basis->cc[C], basis->cc[D],
             basis->norm[A], basis->norm[B], basis->norm[C], basis->norm[D],
-            ERD_SCREEN, erd->icore[tid],
-            nints, &nfirst, erd->zcore[tid]);
+            &integrals_count, erd->zcore[tid]);
+        *nints = integrals_count;
     } else {
-        erd__csgto(erd->fp_memory_opt,
+        uint32_t integrals_count = 0;
+        erd__csgto(atomic,
             basis->nexp[A], basis->nexp[B], basis->nexp[C], basis->nexp[D],
             shell1, shell2, shell3, shell4,
             basis->xyz0[A*4], basis->xyz0[A*4+1], basis->xyz0[A*4+2],
@@ -242,16 +234,42 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
             basis->cc[A], basis->cc[B], basis->cc[C], basis->cc[D],
             basis->norm[A], basis->norm[B], basis->norm[C], basis->norm[D],
             erd->vrrtable, 2 * erd->max_shella,
-            ERD_SPHERIC, ERD_SCREEN,
-            erd->icore[tid], nints,
-            &nfirst, erd->zcore[tid]);
+            ERD_SPHERIC,
+            erd->fp_memory_opt, &integrals_count, erd->zcore[tid]);
+        *nints = integrals_count;
     }
 
-    *integrals = &(erd->zcore[tid][nfirst - 1]);
+    *integrals = erd->zcore[tid];
 
     return CINT_STATUS_SUCCESS;
 }
 
+CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
+                                       ERD_t erd,
+                                       uint32_t threadId,
+                                       uint32_t shellIndicexA,
+                                       const uint32_t*restrict shellIndicesB,
+                                       uint32_t shellIndicexC,
+                                       const uint32_t*restrict shellIndicesD,
+                                       uint32_t shellIndicesCount,
+                                       double **integrals,
+                                       int *integralsCountPtr)
+{
+    int totalIntegralsCount = 0;
+    for (uint32_t shellIndicesIndex = 0; shellIndicesIndex != shellIndicesCount; shellIndicesIndex += 1) {
+        int integralsCount = 0;
+        CIntStatus_t status = CInt_computeShellQuartet(basis, erd, threadId,
+            shellIndicexA, shellIndicesB[shellIndicesIndex], shellIndicexC, shellIndicesD[shellIndicesIndex],
+            integrals, &integralsCount);
+        if (status != CINT_STATUS_SUCCESS) {
+            *integralsCountPtr = totalIntegralsCount;
+            return status;
+        }
+        totalIntegralsCount += integralsCount;
+    }
+    *integralsCountPtr = totalIntegralsCount;
+    return CINT_STATUS_SUCCESS;
+}
 
 int CInt_getMaxMemory(ERD_t erd) {
     return (erd->fp_memory_opt + erd->int_memory_opt);

@@ -2,6 +2,7 @@
 #define __CINT_DEF_H__
 
 #include "cint_type.h"
+#include <stdint.h>
 
 typedef struct OED *OED_t;
 typedef struct ERD *ERD_t;
@@ -121,6 +122,17 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
                                        int D,
                                        double **integrals,
                                        int *nints );
+
+CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
+                                       ERD_t erd,
+                                       uint32_t threadId,
+                                       uint32_t shellIndixA,
+                                       const uint32_t*restrict shellIndicesB,
+                                       uint32_t shellIndixC,
+                                       const uint32_t*restrict shellIndicesD,
+                                       uint32_t shellIndicesCount,
+                                       double **integrals,
+                                       int *integralsCount);
 
 int CInt_getMaxMemory (ERD_t erd);
 
