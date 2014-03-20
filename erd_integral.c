@@ -34,74 +34,140 @@ static void erd_max_scratch(BasisSet_t basis, ERD_t erd) {
 }
 
 
+#if 1
 static CIntStatus_t create_vrrtable(BasisSet_t basis, ERD_t erd) {
     const int max_shella = basis->max_momentum + 1;
     erd->max_shella = max_shella;
-    const int tablesize = 2 * max_shella * max_shella;        
+    const int max_shellp = 2 * (max_shella - 1);
+    const int tablesize = max_shellp + 1;
+    const int total_combinations = (max_shellp + 1) * (max_shellp + 2) * (max_shellp + 3) / 6;
     int **vrrtable = (int **)malloc(sizeof(int *) * tablesize);
-    if (NULL == vrrtable) {
+
+    int *vrrtable__ = (int *)malloc(sizeof(int) * 4 * total_combinations);
+    if (NULL == vrrtable || NULL == vrrtable__) {
 #ifndef __INTEL_OFFLOAD
         CINT_PRINTF(1, "memory allocation failed\n");
 #endif
         return CINT_STATUS_ALLOC_FAILED;
     }
-    for (int shella = 0; shella < max_shella; shella++) {
-        for (int shellp = shella; shellp < 2 * max_shella; shellp++) {
-            const int i = shella * 2 * max_shella + shellp;
-            const int nxyzq = (shellp + 1) * (shellp + 2) / 2;
-            const int nxyzft = (shellp + 1) * (shellp + 2) * (shellp + 3) / 6 -
-                shella * (shella + 1) * (shella + 2) / 6;
 
-            vrrtable[i] = (int *)ALIGNED_MALLOC(sizeof(int) * 4 * nxyzft);
-            if (NULL == vrrtable[i]) {
-                return CINT_STATUS_ALLOC_FAILED;
+    int n = 0;
+    for(int shella = 0; shella <= max_shellp; shella++)
+    {
+        vrrtable[shella] = &vrrtable__[n];
+        int count = 0;
+        for(int xf = shella; xf >= 0; xf--)
+        {
+            for(int yf = shella - xf; yf >= 0; yf--)
+            {
+                int zf = shella - xf - yf;
+                    vrrtable[shella][count + 0] = xf;
+                    vrrtable[shella][count + 1] = yf;
+                    vrrtable[shella][count + 2] = zf;
+                    vrrtable[shella][count + 3] = count;
+                    count += 4;
             }
-            // compute tables    
-            int xfp = nxyzft + 2;
-            int count = 0;
-            for (int xf = 0; xf <= shellp; ++xf) {
-                xfp = xfp + xf - 2;
-                const int xfmax = xf * shellp;
-                const int yfend = shellp - xf;
-                int xyfp = xfp - xfmax;
-                for (int yf = 0; yf <= yfend; ++yf) {
-                    const int xyf = xf + yf;
-                    --xyfp;
-                    const int sfend = MAX(shella, xyf);
-                    int nxyzf = nxyzq;
-                    int idx = xyfp;
-                    for (int sf = shellp; sf >= sfend; --sf) {
-                        const int zf = sf - xyf;                       
-                        vrrtable[i][count + 0] = xf;
-                        vrrtable[i][count + 1] = yf;
-                        vrrtable[i][count + 2] = zf;
-                        vrrtable[i][count + 3] = idx;
-                        count += 4;
-                        idx = idx - nxyzf + xf;
-                        nxyzf = nxyzf - sf - 1;
-                    }
-                }
-            }            
         }
+        n += count;
     }
     erd->vrrtable = vrrtable;
-
     return CINT_STATUS_SUCCESS;
 }
 
-
 static CIntStatus_t destroy_vrrtable(ERD_t erd) {
-    const int max_shella = erd->max_shella;
-    for (int i = 0; i < max_shella; i++) {
-        for (int j = i; j < 2 * max_shella; j++) {
-            const int idx = i * 2 * max_shella + j;
-            ALIGNED_FREE(erd->vrrtable[idx]);
-        }
-    }
+    free(erd->vrrtable[0]);
     free(erd->vrrtable);
     return CINT_STATUS_SUCCESS;
 }
 
+#else
+static CIntStatus_t create_vrrtable(BasisSet_t basis, ERD_t erd) {
+    const int max_shella = basis->max_momentum + 1;
+    erd->max_shella = max_shella;
+    const int max_shellp = 2 * (max_shella - 1);
+    const int tablesize = max_shellp + 1;
+    const int total_combinations = (max_shellp + 1) * (max_shellp + 2) * (max_shellp + 3) / 6;
+    int **vrrtable = (int **)malloc(sizeof(int *) * tablesize * tablesize);
+    int *cum_sum = (int *)malloc(sizeof(int) * tablesize);
+    int *temptable = (int *)malloc(sizeof(int) * 4 * total_combinations);
+    if (NULL == vrrtable || NULL == temptable) {
+#ifndef __INTEL_OFFLOAD
+        CINT_PRINTF(1, "memory allocation failed\n");
+#endif
+        return CINT_STATUS_ALLOC_FAILED;
+    }
+
+    printf("tablesize = %d, total_combinations = %d\n", tablesize, total_combinations);
+    int n = 0;
+    for(int shella = 0; shella <= max_shellp; shella++)
+    {
+        cum_sum[shella] = n;
+        //vrrtable[shella] = &temptable[4 * n];
+        int count = 0;
+        for(int xf = shella; xf >= 0; xf--)
+        {
+            for(int yf = shella - xf; yf >= 0; yf--)
+            {
+                int zf = shella - xf - yf;
+                temptable[4 * n + 0] = xf;
+                temptable[4 * n + 1] = yf;
+                temptable[4 * n + 2] = zf;
+                temptable[4 * n + 3] = count;
+                count += 4;
+                n++;
+            }
+        }
+    }
+    //printf("n = %d\n", n);
+    
+    int *vrrtable__ = (int *)malloc(sizeof(int) * (4 * tablesize * total_combinations * total_combinations + 32));
+    n = 0;
+    for(int shellp = 0; shellp < tablesize; shellp++)
+    {
+        for(int a = 0; a < total_combinations; a++)
+        {
+            for(int b = 0; b < total_combinations; b++)
+            {
+                //printf("a = %d, b = %d\n", a, b);
+                vrrtable__[n * 3 + 0] = temptable[a * 4 + 0] * (shellp + 1) + temptable[b * 4 + 0];
+                vrrtable__[n * 3 + 1] = temptable[a * 4 + 1] * (shellp + 1) + temptable[b * 4 + 1];
+                vrrtable__[n * 3 + 2] = temptable[a * 4 + 2] * (shellp + 1) + temptable[b * 4 + 2];
+                //printf("shellp = %d, a = %d, b = %d\n", shellp, a, b);
+                //printf("n = %d, indx = %d\n", n, vrrtable__[n * 3 + 0]);
+                n++;
+            }
+        }
+    }
+
+    for(int shella = 0; shella <= max_shellp; shella++)
+    {
+        for(int shellc = 0; shellc <= max_shellp; shellc++)
+        {
+            n = cum_sum[shella] * total_combinations + cum_sum[shellc];
+            //printf("shella = %d, shellc = %d, n = %d\n", shella, shellc, n);
+            vrrtable[shella * tablesize + shellc] = &vrrtable__[3 * n];
+            int ind = (n + 2 * total_combinations * total_combinations);
+            //printf("ind = %d, val0 = %d\n", ind, vrrtable__[3 * ind]);
+        }
+    }
+   
+    
+    erd->vrrtable = vrrtable;
+    //free(temptable);
+    //free(cum_sum);
+    printf("Done with vrrtable\n");
+    return CINT_STATUS_SUCCESS;
+}
+
+static CIntStatus_t destroy_vrrtable(ERD_t erd) {
+    printf("destroy_vrrtable\n");
+    free(erd->vrrtable[0]);
+    free(erd->vrrtable);
+    printf("destroy_vrrtable exit \n");
+    //exit(0);
+    return CINT_STATUS_SUCCESS;
+}
+#endif
 
 CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {      
     if (nthreads <= 0) {
@@ -143,7 +209,7 @@ CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {
             return CINT_STATUS_ALLOC_FAILED;
         }
     }
-     
+
     // create vrr table
     const CIntStatus_t status = create_vrrtable(basis, e);
     if (status != CINT_STATUS_SUCCESS) {
