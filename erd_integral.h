@@ -42,13 +42,13 @@ extern void erd__csgto(
     bool spheric,
     uint32_t buffer_capacity, uint32_t output_length[restrict static 1], double output_buffer[restrict static 1]);
 
-extern void erd__memory_csgto(uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+extern size_t erd__memory_csgto(uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
     uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
     double x1, double y1, double z1,
     double x2, double y2, double z2,
     double x3, double y3, double z3,
     double x4, double y4, double z4,
-    bool spheric, size_t *iopt, size_t *zopt);
+    bool spheric);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)

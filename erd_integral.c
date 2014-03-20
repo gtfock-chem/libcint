@@ -19,17 +19,15 @@ static void erd_max_scratch(BasisSet_t basis, ERD_t erd) {
     const int maxnpgto = basis->nexp[max_primid];
         
     if (max_momentum < 2) {
-        erd->int_memory_opt = 0;
-        erd->fp_memory_opt = 81;
+        erd->capacity = 81;
     } else {
-        erd__memory_csgto(maxnpgto, maxnpgto, maxnpgto, maxnpgto,
+        erd->capacity = erd__memory_csgto(
+            maxnpgto, maxnpgto, maxnpgto, maxnpgto,
             max_momentum, max_momentum,
             max_momentum, max_momentum,
             1.0, 1.0, 1.0, 2.0, 2.0, 2.0,
             3.0, 3.0, 3.0, 4.0, 4.0, 4.0,
-            ERD_SPHERIC,
-            &(erd->int_memory_opt),
-            &(erd->fp_memory_opt));
+            ERD_SPHERIC);
     }
 }
 
@@ -189,20 +187,17 @@ CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {
 
     // memory scratch memory
     e->nthreads = nthreads;
-    e->zcore = (double **)malloc(nthreads * sizeof(double *));
-    e->icore = (int **)malloc(nthreads * sizeof(int *));   
-    if ((NULL == e->zcore) || (NULL == e->icore)) {
+    e->buffer = (double **)malloc(nthreads * sizeof(double *));
+    if (e->buffer == NULL) {
 #ifndef __INTEL_OFFLOAD
         CINT_PRINTF(1, "memory allocation failed\n");
 #endif
         return CINT_STATUS_ALLOC_FAILED;
     }    
     for (int i = 0; i < nthreads; i++) {
-        e->zcore[i] =
-            (double *)ALIGNED_MALLOC(e->fp_memory_opt * sizeof(double));
-        e->icore[i] =
-            (int *)ALIGNED_MALLOC(e->int_memory_opt * sizeof(int));   
-        if ((NULL == e->zcore[i]) || (NULL == e->icore[i])) {
+        e->buffer[i] =
+            (double *)ALIGNED_MALLOC(e->capacity * sizeof(double));
+        if (e->buffer[i] == NULL) {
     #ifndef __INTEL_OFFLOAD
             CINT_PRINTF(1, "memory allocation failed\n");
     #endif
@@ -226,12 +221,10 @@ CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {
 
 
 CIntStatus_t CInt_destroyERD(ERD_t erd) {
-    for (int i = 0; i < erd->nthreads; i++) {
-        ALIGNED_FREE(erd->zcore[i]);
-        ALIGNED_FREE(erd->icore[i]);
+    for (uint32_t i = 0; i < erd->nthreads; i++) {
+        ALIGNED_FREE(erd->buffer[i]);
     }
-    free(erd->zcore);
-    free(erd->icore);
+    free(erd->buffer);
 
     destroy_vrrtable(erd);
     free(erd);
@@ -285,7 +278,7 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
             basis->exp[A], basis->exp[B], basis->exp[C], basis->exp[D],
             basis->cc[A], basis->cc[B], basis->cc[C], basis->cc[D],
             basis->norm[A], basis->norm[B], basis->norm[C], basis->norm[D],
-            &integrals_count, erd->zcore[tid]);
+            &integrals_count, erd->buffer[tid]);
         *nints = integrals_count;
     } else {
         uint32_t integrals_count = 0;
@@ -301,11 +294,11 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
             basis->norm[A], basis->norm[B], basis->norm[C], basis->norm[D],
             erd->vrrtable, 2 * erd->max_shella,
             ERD_SPHERIC,
-            erd->fp_memory_opt, &integrals_count, erd->zcore[tid]);
+            erd->capacity, &integrals_count, erd->buffer[tid]);
         *nints = integrals_count;
     }
 
-    *integrals = erd->zcore[tid];
+    *integrals = erd->buffer[tid];
 
     return CINT_STATUS_SUCCESS;
 }
@@ -338,7 +331,7 @@ CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
 }
 
 int CInt_getMaxMemory(ERD_t erd) {
-    return (erd->fp_memory_opt + erd->int_memory_opt);
+    return erd->capacity * sizeof(double);
 }
 
 

@@ -48,10 +48,8 @@ struct ERD
 {
     /* The number of threads used for computation */
     uint32_t nthreads;
-    size_t int_memory_opt;
-    int **icore;
-    size_t fp_memory_opt;
-    double **zcore;    
+    size_t capacity;
+    double **buffer;    
     /* Used for vrrtable */
     int max_shella;
     /* 2D array */
