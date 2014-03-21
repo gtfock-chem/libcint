@@ -6,9 +6,6 @@
 #include <sys/time.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef __INTEL_OFFLOAD
-#include <offload.h>
-#endif
 
 #include "config.h"
 #include "basisset.h"
@@ -20,11 +17,6 @@
 #define A2BOHR       1.889726
 #define CARTESIAN    0
 #define SPHERICAL    1
-
-
-#ifdef __INTEL_OFFLOAD
-__declspec(target(mic)) BasisSet_t basis_mic;
-#endif
 
 
 static char etable[ELEN][MAXATOMNAME + 1] =
@@ -124,7 +116,7 @@ void _maxnumExp (BasisSet_t basis, int *max_nexp)
 #pragma offload_attribute(push, target(mic))
 #endif
 
-static CIntStatus_t _createBasisSet (BasisSet_t *_basis)
+CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
 {
     BasisSet_t basis;
     basis = (BasisSet_t )malloc (sizeof(struct BasisSet));
@@ -142,7 +134,7 @@ static CIntStatus_t _createBasisSet (BasisSet_t *_basis)
 }
 
 
-static CIntStatus_t _destroyBasisSet (BasisSet_t basis)
+CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
 {
     int i;
     free (basis->f_start_id);
@@ -177,7 +169,7 @@ static CIntStatus_t _destroyBasisSet (BasisSet_t basis)
 }
 
 
-static CIntStatus_t parse_molecule (BasisSet_t basis)
+CIntStatus_t parse_molecule (BasisSet_t basis)
 {
     int natoms;
     int nshells;   
@@ -286,77 +278,8 @@ static CIntStatus_t parse_molecule (BasisSet_t basis)
 }
 
 
-static CIntStatus_t _packBasisSet (BasisSet_t basis,
-                                   void **buf,
-                                   int *bufsize)
-{
-    int _bufsize;
-    char *_buf;
-    int offset;
-    int i;
-    int nexp;
-    
-    _bufsize = 6 * sizeof(int) + 4 * basis->natoms * sizeof(double) +                
-               (2 * basis->bs_nshells + ELEN + basis->natoms
-                + basis->bs_natoms + 1) * sizeof(int) +
-                basis->bs_totnexp * 3 * sizeof(double);
-    _buf = (char *)malloc (_bufsize);
-    assert (_buf != NULL);
-    offset = 0;    
-    memcpy (&(_buf[offset]), &(basis->natoms), sizeof(int));
-    offset += sizeof(int);
-    memcpy (&(_buf[offset]), &(basis->nelectrons), sizeof(int));
-    offset += sizeof(int);
-    memcpy (&(_buf[offset]), &(basis->bs_natoms), sizeof(int));
-    offset += sizeof(int);
-    memcpy (&(_buf[offset]), &(basis->basistype), sizeof(int));
-    offset += sizeof(int);
-    memcpy (&(_buf[offset]), &(basis->bs_nshells), sizeof(int));
-    offset += sizeof(int);
-    memcpy (&(_buf[offset]), &(basis->bs_totnexp), sizeof(int));
-    offset += sizeof(int);
-    memcpy (&(_buf[offset]), basis->xn, sizeof(double) * basis->natoms);
-    offset += sizeof(double) * basis->natoms;
-    memcpy (&(_buf[offset]), basis->yn, sizeof(double) * basis->natoms);
-    offset += sizeof(double) * basis->natoms;
-    memcpy (&(_buf[offset]), basis->zn, sizeof(double) * basis->natoms);
-    offset += sizeof(double) * basis->natoms;
-    memcpy (&(_buf[offset]), basis->charge, sizeof(double) * basis->natoms);
-    offset += sizeof(double) * basis->natoms;
-    memcpy (&(_buf[offset]), basis->eid, sizeof(int) * basis->natoms);
-    offset += sizeof(int) * basis->natoms;
-    memcpy (&(_buf[offset]), basis->bs_nexp, sizeof(int) * basis->bs_nshells);
-    offset += sizeof(int) * basis->bs_nshells;
-
-    for (i = 0; i < basis->bs_nshells; i++)
-    {
-        nexp = basis->bs_nexp[i];
-        memcpy (&(_buf[offset]), basis->bs_exp[i], sizeof(double) * nexp);
-        offset += sizeof(double) * nexp;
-        memcpy (&(_buf[offset]), basis->bs_cc[i], sizeof(double) * nexp);
-        offset += sizeof(double) * nexp;
-        memcpy (&(_buf[offset]), basis->bs_norm[i], sizeof(double) * nexp);
-        offset += sizeof(double) * nexp;
-    }
-
-    memcpy (&(_buf[offset]), basis->bs_eptr, sizeof(int) * ELEN);
-    offset += sizeof(int) * ELEN;
-    memcpy (&(_buf[offset]), basis->bs_atom_start, sizeof(int) * (basis->bs_natoms + 1));
-    offset += sizeof(int) * (basis->bs_natoms + 1);
-    memcpy (&(_buf[offset]), basis->bs_momentum, sizeof(int) * basis->bs_nshells);
-    offset += sizeof(int) * basis->bs_nshells;
-    
-    assert (offset == _bufsize);
-
-    *bufsize = _bufsize;
-    *buf = (void *)_buf;
-
-    return CINT_STATUS_SUCCESS; 
-}
-
-
-static CIntStatus_t _unpackBasisSet (BasisSet_t basis,
-                                     void *buf)
+CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
+                                  void *buf)
 {
     int offset;
     CIntStatus_t ret;
@@ -469,7 +392,7 @@ static CIntStatus_t _unpackBasisSet (BasisSet_t basis,
 #endif
 
 
-static CIntStatus_t import_molecule (char *file, BasisSet_t basis)
+CIntStatus_t import_molecule (char *file, BasisSet_t basis)
 {
     FILE *fp;
     char line[1024];
@@ -571,7 +494,7 @@ static CIntStatus_t import_molecule (char *file, BasisSet_t basis)
 }
 
 
-static CIntStatus_t import_basis (char *file, BasisSet_t basis)
+CIntStatus_t import_basis (char *file, BasisSet_t basis)
 {
     FILE *fp;
     char line[1024];
@@ -772,63 +695,72 @@ static CIntStatus_t import_basis (char *file, BasisSet_t basis)
 }
 
 
-CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
+CIntStatus_t CInt_packBasisSet (BasisSet_t basis,
+                                void **buf,
+                                int *bufsize)
 {
-    CIntStatus_t status;    
-    status = _createBasisSet (_basis);
-    if (status != CINT_STATUS_SUCCESS)
-    {
-        return status;
-    }
-    
-#ifdef __INTEL_OFFLOAD
+    int _bufsize;
+    char *_buf;
+    int offset;
     int i;
-    int mic_numdevs;   
-    mic_numdevs = _Offload_number_of_devices ();    
-    _basis[0]->mic_numdevs = mic_numdevs;
-    for (i = 0; i < mic_numdevs; i++)
-    {
-        #pragma offload target(mic: i) \
-                nocopy(basis_mic) out(status)
-        {
-            status = _createBasisSet (&basis_mic);            
-        }
-        if (status != CINT_STATUS_SUCCESS)
-        {
-            return CINT_STATUS_OFFLOAD_ERROR;
-        }
-    }
-#endif
+    int nexp;
     
-    return CINT_STATUS_SUCCESS;
-}
+    _bufsize = 6 * sizeof(int) + 4 * basis->natoms * sizeof(double) +                
+               (2 * basis->bs_nshells + ELEN + basis->natoms
+                + basis->bs_natoms + 1) * sizeof(int) +
+                basis->bs_totnexp * 3 * sizeof(double);
+    _buf = (char *)malloc (_bufsize);
+    assert (_buf != NULL);
+    offset = 0;    
+    memcpy (&(_buf[offset]), &(basis->natoms), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), &(basis->nelectrons), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), &(basis->bs_natoms), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), &(basis->basistype), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), &(basis->bs_nshells), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), &(basis->bs_totnexp), sizeof(int));
+    offset += sizeof(int);
+    memcpy (&(_buf[offset]), basis->xn, sizeof(double) * basis->natoms);
+    offset += sizeof(double) * basis->natoms;
+    memcpy (&(_buf[offset]), basis->yn, sizeof(double) * basis->natoms);
+    offset += sizeof(double) * basis->natoms;
+    memcpy (&(_buf[offset]), basis->zn, sizeof(double) * basis->natoms);
+    offset += sizeof(double) * basis->natoms;
+    memcpy (&(_buf[offset]), basis->charge, sizeof(double) * basis->natoms);
+    offset += sizeof(double) * basis->natoms;
+    memcpy (&(_buf[offset]), basis->eid, sizeof(int) * basis->natoms);
+    offset += sizeof(int) * basis->natoms;
+    memcpy (&(_buf[offset]), basis->bs_nexp, sizeof(int) * basis->bs_nshells);
+    offset += sizeof(int) * basis->bs_nshells;
 
-
-CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
-{
-    CIntStatus_t status;
-    
-#ifdef __INTEL_OFFLOAD
-    int i;
-    for (i = 0; i < basis->mic_numdevs; i++)
+    for (i = 0; i < basis->bs_nshells; i++)
     {
-        #pragma offload target(mic: i)\
-                nocopy(basis_mic) out(status)
-        status = _destroyBasisSet (basis_mic);
-        if (status != CINT_STATUS_SUCCESS)
-        {
-            return status;
-        }
+        nexp = basis->bs_nexp[i];
+        memcpy (&(_buf[offset]), basis->bs_exp[i], sizeof(double) * nexp);
+        offset += sizeof(double) * nexp;
+        memcpy (&(_buf[offset]), basis->bs_cc[i], sizeof(double) * nexp);
+        offset += sizeof(double) * nexp;
+        memcpy (&(_buf[offset]), basis->bs_norm[i], sizeof(double) * nexp);
+        offset += sizeof(double) * nexp;
     }
-#endif
 
-    status = _destroyBasisSet (basis);
-    if (status != CINT_STATUS_SUCCESS)
-    {
-        return status;
-    }
+    memcpy (&(_buf[offset]), basis->bs_eptr, sizeof(int) * ELEN);
+    offset += sizeof(int) * ELEN;
+    memcpy (&(_buf[offset]), basis->bs_atom_start, sizeof(int) * (basis->bs_natoms + 1));
+    offset += sizeof(int) * (basis->bs_natoms + 1);
+    memcpy (&(_buf[offset]), basis->bs_momentum, sizeof(int) * basis->bs_nshells);
+    offset += sizeof(int) * basis->bs_nshells;
     
-    return CINT_STATUS_SUCCESS;
+    assert (offset == _bufsize);
+
+    *bufsize = _bufsize;
+    *buf = (void *)_buf;
+
+    return CINT_STATUS_SUCCESS; 
 }
 
 
@@ -853,49 +785,7 @@ CIntStatus_t CInt_loadBasisSet (BasisSet_t basis, char *bsfile, char *molfile)
         return status;
     }
     
-#ifdef __INTEL_OFFLOAD
-    int i;
-    char *buf;
-    int bufsize;
-    _packBasisSet (basis, (void **)&buf, &bufsize);
-    for (i = 0; i < basis->mic_numdevs; i++)
-    {
-        #pragma offload target(mic: i)\
-                in(bufsize) in(buf: length(bufsize))\
-                nocopy(basis_mic) out(status)
-        {
-            status = _unpackBasisSet (basis_mic, buf);
-        }
-        if (status != CINT_STATUS_SUCCESS)
-        {
-            return status;
-        }        
-    }
-    free(buf);
-#endif        
-
     return CINT_STATUS_SUCCESS;
-}
-
-
-CIntStatus_t CInt_packBasisSet (BasisSet_t basis,
-                                void **buf,
-                                int *bufsize)
-{
-    CIntStatus_t status;
-    status = _packBasisSet (basis, buf, bufsize);
-    
-    return status;
-}
-
-
-CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
-                                  void *buf)
-{
-    CIntStatus_t status;
-    status = _unpackBasisSet (basis, buf);
-    
-    return status;
 }
 
 
@@ -929,10 +819,6 @@ void CInt_getShellxyz ( BasisSet_t basis,
 }
 
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
 int CInt_getShellDim (BasisSet_t basis, int shellid)
 {
     return (basis->f_end_id[shellid] -
@@ -945,10 +831,6 @@ int CInt_getFuncStartInd (BasisSet_t basis, int shellid)
     return (basis->f_start_id[shellid]);
 }
 
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
 
 int CInt_getMaxShellDim (BasisSet_t basis)
 {

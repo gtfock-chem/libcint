@@ -330,11 +330,10 @@ CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
     return CINT_STATUS_SUCCESS;
 }
 
-int CInt_getMaxMemory(ERD_t erd) {
-    return erd->capacity * sizeof(double);
-}
-
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
+int CInt_getMaxMemory(ERD_t erd) {
+    return erd->capacity * sizeof(double);
+}

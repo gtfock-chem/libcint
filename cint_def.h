@@ -21,27 +21,35 @@ typedef enum
     CINT_STATUS_OFFLOAD_ERROR = 7
 } CIntStatus_t;
 
+
 #ifdef __INTEL_OFFLOAD
+extern __declspec(target(mic)) ERD_t erd_mic;
 extern __declspec(target(mic)) BasisSet_t basis_mic;
 #endif
 
 // basisset
-// TODO: develop basisset parser
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
+#endif
 
 CIntStatus_t CInt_createBasisSet( BasisSet_t *basis );
+
+CIntStatus_t CInt_destroyBasisSet( BasisSet_t basis );
+
+CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
+                                  void *buf);
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
 
 CIntStatus_t CInt_loadBasisSet( BasisSet_t basis,
                                 char *bsfile,
                                 char *xyzfile );
 
-CIntStatus_t CInt_destroyBasisSet( BasisSet_t basis );
-
 CIntStatus_t CInt_packBasisSet( BasisSet_t basis,
                                 void **buf,
                                 int *bufsize );
-
-CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
-                                void *buf);
 
 int CInt_getNumShells( BasisSet_t basis );
 
@@ -100,17 +108,18 @@ void CInt_getShellxyz ( BasisSet_t basis,
                         double *y,
                         double *z );
 
-
-// two electron integrals
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
 int CInt_getShellDim( BasisSet_t basis,
                       int shellid );
 
 int CInt_getFuncStartInd( BasisSet_t basis,
                           int shellid );
+
+int CInt_getMaxMemory (ERD_t erd);
+
+// two electron integrals
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
+#endif
 
 CIntStatus_t CInt_createERD( BasisSet_t basis,
                              ERD_t *erd,
@@ -140,10 +149,25 @@ CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
                                        double **integrals,
                                        int *integralsCount);
 
-int CInt_getMaxMemory (ERD_t erd);
-
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif
+
+
+#ifdef __INTEL_OFFLOAD
+CIntStatus_t CInt_offload_createBasisSet( BasisSet_t *_basis );
+
+CIntStatus_t CInt_offload_destroyBasisSet( BasisSet_t basis );
+
+CIntStatus_t CInt_offload_loadBasisSet( BasisSet_t basis,
+                                        char *bsfile,
+                                        char *molfile );
+
+CIntStatus_t CInt_offload_createERD( BasisSet_t basis,
+                                     ERD_t *erd,
+                                     int nthreads, int nthreads_mic);
+
+CIntStatus_t CInt_offload_destroyERD( ERD_t erd );
 #endif
 
 

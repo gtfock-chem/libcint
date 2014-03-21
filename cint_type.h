@@ -54,6 +54,9 @@ struct ERD
     int max_shella;
     /* 2D array */
     int **vrrtable;
+#ifdef __INTEL_OFFLOAD
+    int mic_numdevs;
+#endif    
 };
 
 struct BasisSet
