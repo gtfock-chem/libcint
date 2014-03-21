@@ -4,7 +4,7 @@ header=CInt.h
 file=cint_def.h
 olddef=CINT_DEF_H
 newdef=__CINT_H__
-include=("")
+include=("#include <stdint.h>")
 struct=(ERD OED BasisSet)
 
 cp -r ${file} _temp
