@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <malloc.h>
 #include <math.h>
 #include <assert.h>
@@ -178,8 +179,6 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     int max_momentum;
     int max_nexp;
     int max_nexp_id;
-    int i;
-    int j;
     int eid;
     int atom_start;
     int atom_end;
@@ -187,22 +186,21 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     // get lengths
     natoms = basis->natoms;
     nshells = 0;
-    for (i = 0; i < natoms; i++)
-    {
+    for (uint32_t i = 0; i < natoms; i++) {
         eid = basis->eid[i];
         atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
         atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
         nshells += atom_end - atom_start;
     }
-    basis->s_start_id = (int *)malloc (sizeof(int) * (natoms + 1));
-    basis->f_start_id = (int *)malloc (sizeof(int) * nshells);
-    basis->f_end_id = (int *)malloc (sizeof(int) * nshells);
+    basis->s_start_id = (uint32_t *)malloc (sizeof(uint32_t) * (natoms + 1));
+    basis->f_start_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
+    basis->f_end_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->xyz0 = (double *)memalign(32, sizeof(double) * nshells * 4);
-    basis->nexp = (int *)malloc (sizeof(int) * nshells);
+    basis->nexp = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->cc = (double **)malloc (sizeof(double *) * nshells);
     basis->exp = (double **)malloc (sizeof(double *) * nshells);
     basis->norm = (double **)malloc (sizeof(double *) * nshells);
-    basis->momentum = (int *)malloc (sizeof(int) * nshells);   
+    basis->momentum = (uint32_t *)malloc (sizeof(uint32_t) * nshells);   
     if (NULL == basis->f_start_id ||
         NULL == basis->f_end_id ||
         NULL == basis->s_start_id ||
@@ -227,14 +225,12 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     max_momentum = 0;
     max_nexp = 0;
     max_nexp_id = 0;
-    for (i = 0; i < natoms; i++)
-    {
+    for (uint32_t i = 0; i < natoms; i++) {
         eid = basis->eid[i];    
         atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
         atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
         basis->s_start_id[i] = nshells;
-        for (j = atom_start; j < atom_end; j++)
-        {
+        for (uint32_t j = atom_start; j < atom_end; j++) {
             basis->f_start_id[nshells + j - atom_start] = nfunctions;
             basis->nexp[nshells + j - atom_start] = basis->bs_nexp[j];
             basis->xyz0[(nshells + j - atom_start) * 4 + 0] = basis->xn[i];
@@ -243,22 +239,19 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
             basis->momentum[nshells + j - atom_start] = basis->bs_momentum[j];
             max_momentum = (max_momentum > basis->bs_momentum[j] ?
                 max_momentum : basis->bs_momentum[j]);
-            if (max_nexp < basis->bs_nexp[j])
-            {
-                max_nexp  = basis->bs_nexp[j];
+            if (max_nexp < basis->bs_nexp[j]) {
+                max_nexp = basis->bs_nexp[j];
                 max_nexp_id = nshells + j - atom_start;
             }
             basis->cc[nshells + j - atom_start] = basis->bs_cc[j];
             basis->exp[nshells + j - atom_start] = basis->bs_exp[j];
             basis->norm[nshells + j - atom_start] = basis->bs_norm[j];
-            if (basis->basistype == SPHERICAL)
-            {
+            if (basis->basistype == SPHERICAL) {
                 nfunctions += 2 * basis->bs_momentum[j] + 1;
                 maxdim = (2 * basis->bs_momentum[j] + 1) > maxdim ?
                     (2 * basis->bs_momentum[j] + 1) : maxdim;
             }
-            else if (basis->basistype == CARTESIAN)
-            {
+            else if (basis->basistype == CARTESIAN) {
                 nfunctions += (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
                 maxdim = ((basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2) > maxdim ?
                     ((basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2) : maxdim;
@@ -278,9 +271,7 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
 }
 
 
-CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis,
-                                  void *buf)
-{
+CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis, void *buf) {
     int offset;
     CIntStatus_t ret;
     char *_buf;

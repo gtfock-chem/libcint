@@ -84,22 +84,22 @@ struct BasisSet
     int *bs_momentum;
     
     // shell
-    int nshells;    
-    int nfunctions;    
-    int *f_start_id;
-    int *f_end_id;
-    int *s_start_id;
-    int *nexp;
+    uint32_t nshells;    
+    uint32_t nfunctions;    
+    uint32_t *f_start_id;
+    uint32_t *f_end_id;
+    uint32_t *s_start_id;
+    uint32_t *nexp;
     double **exp;
     double **cc;
     double **norm;
-    int *momentum;
+    uint32_t *momentum;
     double *xyz0;
 
-    int maxdim; // max number of functions of a shell 
-    int max_momentum;
-    int max_nexp;
-    int max_nexp_id;
+    uint32_t maxdim; // max number of functions of a shell 
+    uint32_t max_momentum;
+    uint32_t max_nexp;
+    uint32_t max_nexp_id;
     
     char str_buf[512];
 
