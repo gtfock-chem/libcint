@@ -265,33 +265,20 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
     const uint32_t shell3 = basis->momentum[C];
     const uint32_t shell4 = basis->momentum[D];
     const uint32_t orshell = shell1 | shell2 | shell3 | shell4;
-    const bool atomic = ((A ^ B) | (B ^ C) | (C ^ D)) == 0;
     if (orshell < 2) {
         uint32_t integrals_count = 0;
         erd__1111_csgto(
-            basis->nexp[A], basis->nexp[B], basis->nexp[C], basis->nexp[D],
-            shell1, shell2, shell3, shell4, atomic,
-            basis->xyz0[A*4], basis->xyz0[A*4+1], basis->xyz0[A*4+2],
-            basis->xyz0[B*4], basis->xyz0[B*4+1], basis->xyz0[B*4+2],
-            basis->xyz0[C*4], basis->xyz0[C*4+1], basis->xyz0[C*4+2],
-            basis->xyz0[D*4], basis->xyz0[D*4+1], basis->xyz0[D*4+2],
-            basis->exp[A], basis->exp[B], basis->exp[C], basis->exp[D],
-            basis->cc[A], basis->cc[B], basis->cc[C], basis->cc[D],
-            basis->norm[A], basis->norm[B], basis->norm[C], basis->norm[D],
-            &integrals_count, erd->buffer[tid]);
+            A, B, C, D,
+            basis->nexp, basis->momentum, basis->xyz0,
+            (const double**)basis->exp, (const double**)basis->cc, (const double**)basis->norm,
+            erd->capacity, &integrals_count, erd->buffer[tid]);
         *nints = integrals_count;
     } else {
         uint32_t integrals_count = 0;
-        erd__csgto(atomic,
-            basis->nexp[A], basis->nexp[B], basis->nexp[C], basis->nexp[D],
-            shell1, shell2, shell3, shell4,
-            basis->xyz0[A*4], basis->xyz0[A*4+1], basis->xyz0[A*4+2],
-            basis->xyz0[B*4], basis->xyz0[B*4+1], basis->xyz0[B*4+2],
-            basis->xyz0[C*4], basis->xyz0[C*4+1], basis->xyz0[C*4+2],
-            basis->xyz0[D*4], basis->xyz0[D*4+1], basis->xyz0[D*4+2],
-            basis->exp[A], basis->exp[B], basis->exp[C], basis->exp[D],
-            basis->cc[A], basis->cc[B], basis->cc[C], basis->cc[D],
-            basis->norm[A], basis->norm[B], basis->norm[C], basis->norm[D],
+        erd__csgto(
+            A, B, C, D,
+            basis->nexp, basis->momentum, basis->xyz0,
+            (const double**)basis->exp, (const double**)basis->cc, (const double**)basis->norm,
             erd->vrrtable, 2 * erd->max_shella,
             ERD_SPHERIC,
             erd->capacity, &integrals_count, erd->buffer[tid]);
