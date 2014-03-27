@@ -91,6 +91,7 @@ struct BasisSet
     uint32_t *s_start_id;
     uint32_t *nexp;
     double **exp;
+    double *minexp;
     double **cc;
     double **norm;
     uint32_t *momentum;

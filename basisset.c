@@ -19,6 +19,14 @@
 #define CARTESIAN    0
 #define SPHERICAL    1
 
+static inline double vector_min(size_t length, const double vector[restrict static length]) {
+    double result = vector[0];
+    for (size_t i = 1; i < length; i++) {
+        const double element = vector[i];
+        result = (element < result) ? element : result;
+    }
+    return result;
+}
 
 static char etable[ELEN][MAXATOMNAME + 1] =
 {
@@ -162,6 +170,7 @@ CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
     free (basis->bs_momentum);
     free (basis->cc);
     free (basis->exp);
+    free (basis->minexp);
     free (basis->norm);
 
     free (basis);
@@ -199,6 +208,7 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     basis->nexp = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->cc = (double **)malloc (sizeof(double *) * nshells);
     basis->exp = (double **)malloc (sizeof(double *) * nshells);
+    basis->minexp = (double*)malloc (sizeof(double) * nshells);
     basis->norm = (double **)malloc (sizeof(double *) * nshells);
     basis->momentum = (uint32_t *)malloc (sizeof(uint32_t) * nshells);   
     if (NULL == basis->f_start_id ||
@@ -245,6 +255,7 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
             }
             basis->cc[nshells + j - atom_start] = basis->bs_cc[j];
             basis->exp[nshells + j - atom_start] = basis->bs_exp[j];
+            basis->minexp[nshells + j - atom_start] = vector_min(basis->nexp[nshells + j - atom_start], basis->exp[nshells + j - atom_start]);
             basis->norm[nshells + j - atom_start] = basis->bs_norm[j];
             if (basis->basistype == SPHERICAL) {
                 nfunctions += 2 * basis->bs_momentum[j] + 1;

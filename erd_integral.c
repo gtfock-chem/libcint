@@ -270,7 +270,7 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
         erd__1111_csgto(
             A, B, C, D,
             basis->nexp, basis->momentum, basis->xyz0,
-            (const double**)basis->exp, (const double**)basis->cc, (const double**)basis->norm,
+            (const double**)basis->exp, basis->minexp, (const double**)basis->cc, (const double**)basis->norm,
             erd->capacity, &integrals_count, erd->buffer[tid]);
         *nints = integrals_count;
     } else {
@@ -278,7 +278,7 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
         erd__csgto(
             A, B, C, D,
             basis->nexp, basis->momentum, basis->xyz0,
-            (const double**)basis->exp, (const double**)basis->cc, (const double**)basis->norm,
+            (const double**)basis->exp, basis->minexp, (const double**)basis->cc, (const double**)basis->norm,
             erd->vrrtable, 2 * erd->max_shella,
             ERD_SPHERIC,
             erd->capacity, &integrals_count, erd->buffer[tid]);

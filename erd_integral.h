@@ -17,13 +17,13 @@
 extern uint32_t erd__1111_csgto(
     uint32_t A, uint32_t B, uint32_t C, uint32_t D,
     const uint32_t npgto[restrict static 1], const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
-    const double *restrict alpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
+    const double *restrict alpha[restrict static 1], const double minalpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
     uint32_t buffer_capacity, uint32_t integral_counts[restrict static 1], double output_buffer[restrict static 81]);
 
 extern uint32_t erd__csgto(
     uint32_t A, uint32_t B, uint32_t C, uint32_t D,
     const uint32_t npgto[restrict static 1], const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
-    const double *restrict alpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
+    const double *restrict alpha[restrict static 1], const double minalpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
     int **vrrtab, int ldvrrtab,
     bool spheric,
     uint32_t buffer_capacity, uint32_t integral_counts[restrict static 1], double output_buffer[restrict static 1]);
