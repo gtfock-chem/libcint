@@ -19,15 +19,6 @@
 #define CARTESIAN    0
 #define SPHERICAL    1
 
-static inline double vector_min(size_t length, const double vector[restrict static length]) {
-    double result = vector[0];
-    for (size_t i = 1; i < length; i++) {
-        const double element = vector[i];
-        result = (element < result) ? element : result;
-    }
-    return result;
-}
-
 static char etable[ELEN][MAXATOMNAME + 1] =
 {
   "H",  "He", "Li", "Be", "B",
@@ -124,6 +115,16 @@ void _maxnumExp (BasisSet_t basis, int *max_nexp)
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
 #endif
+
+static inline double vector_min(size_t length, const double vector[restrict static length]) {
+    double result = vector[0];
+    for (size_t i = 1; i < length; i++) {
+        const double element = vector[i];
+        result = (element < result) ? element : result;
+    }
+    return result;
+}
+
 
 CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
 {
