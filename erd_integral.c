@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include "erd_integral.h"
 #include "basisset.h"
@@ -198,6 +199,10 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
 
     *integrals = erd->buffer[tid];
 
+    if (*nints != 0 && isnan((*integrals)[0]))
+    {
+        printf ("NAN %d %d %d %d\n", A, B, C, D);
+    }
     return CINT_STATUS_SUCCESS;
 }
 

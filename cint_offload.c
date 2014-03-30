@@ -15,8 +15,8 @@
 
 
 #ifdef __INTEL_OFFLOAD
-__declspec (target (mic)) ERD_t erd_mic;
-__declspec (target (mic)) BasisSet_t basis_mic;
+__declspec (target (mic)) ERD_t erd_mic = NULL;
+__declspec (target (mic)) BasisSet_t basis_mic = NULL;
 #endif
 
 
@@ -39,7 +39,7 @@ CIntStatus_t CInt_offload_createBasisSet (BasisSet_t * _basis)
     _basis[0]->mic_numdevs = mic_numdevs;
     for (i = 0; i < mic_numdevs; i++)
     {
-#pragma offload target(mic: i) \
+        #pragma offload target(mic: i) \
                 nocopy(basis_mic) out(status)
         {
             status = CInt_createBasisSet (&basis_mic);
@@ -61,7 +61,7 @@ CIntStatus_t CInt_offload_destroyBasisSet (BasisSet_t basis)
 
     for (i = 0; i < basis->mic_numdevs; i++)
     {
-#pragma offload target(mic: i)\
+        #pragma offload target(mic: i)\
                 nocopy(basis_mic) out(status)
         status = CInt_destroyBasisSet (basis_mic);
         if (status != CINT_STATUS_SUCCESS)
@@ -80,13 +80,36 @@ CIntStatus_t CInt_offload_destroyBasisSet (BasisSet_t basis)
 }
 
 
+CIntStatus_t CInt_offload_pushBasisSet (BasisSet_t basis)
+{
+    CIntStatus_t status;
+    char *buf;
+    int bufsize;
+    
+    CInt_packBasisSet (basis, (void **) &buf, &bufsize);
+    for (int i = 0; i < basis->mic_numdevs; i++)
+    {
+        #pragma offload target(mic: i)\
+                in(bufsize) in(buf: length(bufsize))\
+                nocopy(basis_mic) out(status)
+        {
+            status = CInt_unpackBasisSet (basis_mic, buf);
+        }
+        if (status != CINT_STATUS_SUCCESS)
+        {
+            return status;
+        }
+    }
+    free (buf);
+
+    return CINT_STATUS_SUCCESS;
+}
+
+
 CIntStatus_t CInt_offload_loadBasisSet (BasisSet_t basis,
                                         char *bsfile, char *molfile)
 {
     CIntStatus_t status;
-    int i;
-    char *buf;
-    int bufsize;
 
     // read xyz file
     if ((status = import_molecule (molfile, basis)) != CINT_STATUS_SUCCESS)
@@ -105,21 +128,11 @@ CIntStatus_t CInt_offload_loadBasisSet (BasisSet_t basis,
         return status;
     }
 
-    CInt_packBasisSet (basis, (void **) &buf, &bufsize);
-    for (i = 0; i < basis->mic_numdevs; i++)
+    // push basis set to mic
+    if ((status = CInt_offload_pushBasisSet (basis)) != CINT_STATUS_SUCCESS)
     {
-#pragma offload target(mic: i)\
-                in(bufsize) in(buf: length(bufsize))\
-                nocopy(basis_mic) out(status)
-        {
-            status = CInt_unpackBasisSet (basis_mic, buf);
-        }
-        if (status != CINT_STATUS_SUCCESS)
-        {
-            return status;
-        }
+        return status;
     }
-    free (buf);
 
     return CINT_STATUS_SUCCESS;
 }
@@ -130,7 +143,6 @@ CIntStatus_t CInt_offload_createERD (BasisSet_t basis, ERD_t * erd,
 {
     CIntStatus_t status;
     int mic_id;
-    printf ("create %d %d\n", nthreads, nthreads_mic);
     status = CInt_createERD (basis, erd, nthreads);
     if (status != CINT_STATUS_SUCCESS)
     {
@@ -140,11 +152,15 @@ CIntStatus_t CInt_offload_createERD (BasisSet_t basis, ERD_t * erd,
 
     for (mic_id = 0; mic_id < erd[0]->mic_numdevs; mic_id++)
     {
-#pragma offload target(mic:mic_id)\
+        #pragma offload target(mic:mic_id)\
                 nocopy(basis_mic, erd_mic)\
                 in(nthreads_mic)\
                 out(status)
         {
+            if (nthreads_mic <= 0)
+            {
+                nthreads_mic = omp_get_max_threads ();
+            }
             status = CInt_createERD (basis_mic, &erd_mic, nthreads_mic);
         }
         if (status != CINT_STATUS_SUCCESS)
@@ -170,7 +186,7 @@ CIntStatus_t CInt_offload_destroyERD (ERD_t erd)
 
     for (mic_id = 0; mic_id < erd->mic_numdevs; mic_id++)
     {
-#pragma offload target(mic:mic_id)\
+        #pragma offload target(mic:mic_id)\
                 nocopy(erd_mic)\
                 out(status)
         {

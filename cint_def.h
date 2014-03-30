@@ -159,6 +159,8 @@ CIntStatus_t CInt_offload_createBasisSet( BasisSet_t *_basis );
 
 CIntStatus_t CInt_offload_destroyBasisSet( BasisSet_t basis );
 
+CIntStatus_t CInt_offload_pushBasisSet( BasisSet_t basis );
+
 CIntStatus_t CInt_offload_loadBasisSet( BasisSet_t basis,
                                         char *bsfile,
                                         char *molfile );
