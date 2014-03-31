@@ -201,4 +201,20 @@ CIntStatus_t CInt_offload_destroyERD (ERD_t erd)
     return CINT_STATUS_SUCCESS;
 }
 
+
+void CInt_offload_getMaxMemory(ERD_t erd, double *mem_mic, double *mem_cpu)
+{
+    double _mem_mic;
+    
+    CInt_getMaxMemory (erd, mem_cpu);
+
+    #pragma offload target(mic:0)\
+                nocopy(erd_mic)\
+                out(_mem_mic)
+    {
+        CInt_getMaxMemory (erd_mic, &_mem_mic);
+    }
+}
+
+
 #endif /* #ifdef __INTEL_OFFLOAD */
