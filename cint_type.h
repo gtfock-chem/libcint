@@ -69,10 +69,12 @@ struct BasisSet
     double *zn;   
     double *charge;
     int nelectrons;
+    double **guess;
 
     // basis
     int bs_natoms;
     int basistype;
+    int *bs_eid;
     int *bs_eptr;
     int *bs_atom_start;
     int bs_nshells;

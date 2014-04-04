@@ -114,6 +114,12 @@ int CInt_getShellDim( BasisSet_t basis,
 int CInt_getFuncStartInd( BasisSet_t basis,
                           int shellid );
 
+void CInt_getInitialGuess( BasisSet_t basis,
+                           int atomid,
+                           double **guess,
+                           int *spos,
+                           int *epos );
+
 // two electron integrals
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -147,8 +153,8 @@ CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
                                        double **integrals,
                                        int *integralsCount);
 
-void CInt_getMaxMemory ( ERD_t erd,
-                         double *memsize );
+void CInt_getMaxMemory( ERD_t erd,
+                        double *memsize );
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)

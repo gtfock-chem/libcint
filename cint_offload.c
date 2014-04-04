@@ -110,20 +110,7 @@ CIntStatus_t CInt_offload_loadBasisSet (BasisSet_t basis,
                                         char *bsfile, char *molfile)
 {
     CIntStatus_t status;
-
-    // read xyz file
-    if ((status = import_molecule (molfile, basis)) != CINT_STATUS_SUCCESS)
-    {
-        return status;
-    }
-    // read basis set
-    if ((status = import_basis (bsfile, basis)) != CINT_STATUS_SUCCESS)
-    {
-        return status;
-    }
-
-    //parse xyz
-    if ((status = parse_molecule (basis)) != CINT_STATUS_SUCCESS)
+    if ((status = CInt_loadBasisSet (basis, bsfile, molfile)) != CINT_STATUS_SUCCESS)
     {
         return status;
     }

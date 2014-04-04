@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <ctype.h>
+#include <libgen.h>
 
 #include "config.h"
 #include "basisset.h"
@@ -573,13 +574,15 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
     basis->bs_norm = (double **)malloc (sizeof(double *) * nshells);
     basis->bs_exp = (double **)malloc (sizeof(double *) * nshells);
     basis->bs_momentum = (int *)malloc (sizeof(int) * nshells);
+    basis->bs_eid = (int *)malloc (sizeof(int) * natoms);
     if (NULL == basis->bs_atom_start ||
         NULL == basis->bs_eptr ||
         NULL == basis->bs_nexp ||
         NULL == basis->bs_cc ||
         NULL == basis->bs_exp ||
         NULL == basis->bs_norm ||
-        NULL == basis->bs_momentum)
+        NULL == basis->bs_momentum ||
+        NULL == basis->bs_eid)
     {
         CINT_PRINTF (1, "memory allocation failed\n");
         return CINT_STATUS_ALLOC_FAILED;    
@@ -606,6 +609,7 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
                 if (strcmp (str, etable[i]) == 0)
                 {
                     basis->bs_eptr[i] = natoms;
+                    basis->bs_eid[natoms] = i;
                     break;
                 }
             }
@@ -698,6 +702,81 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
 }
 
 
+CIntStatus_t import_guess (char *file, BasisSet_t basis)
+{
+    char *dir = dirname (file);
+    char fname[1024];
+    char line[1024];
+    
+    basis->guess = (double **)malloc (sizeof(double *) * basis->bs_natoms); 
+    if (basis->guess == NULL)
+    {
+        return CINT_STATUS_ALLOC_FAILED;
+    }
+     
+    for (int i = 0; i < basis->bs_natoms; i++)
+    {
+        const int atom_start = basis->bs_atom_start[i];
+        const int atom_end = basis->bs_atom_start[i + 1];
+        const int eid = basis->bs_eid[i];
+        int nfunctions = 0;
+        for (int j = atom_start; j < atom_end; j++)
+        {
+            if (basis->basistype == SPHERICAL)
+            {
+                nfunctions += 2 * basis->bs_momentum[j] + 1;
+            }
+            else if (basis->basistype == CARTESIAN)
+            {
+                nfunctions += (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
+            }
+        }
+        basis->guess[i] = (double *)malloc (sizeof(double) * nfunctions * nfunctions);
+
+        // read guess
+        sprintf (fname, "%s/%s.dat", dir, etable[eid]);
+        FILE *fp = fopen (fname, "r");
+        int flag = 0;
+        if (fp != NULL)
+        {
+            for (int j = 0; j < nfunctions * nfunctions; j++)
+            {
+                if (fgets (line, 1024, fp) == NULL)
+                {
+                    flag = 1;
+                    goto end;
+                }
+                sscanf (line, "%le", &(basis->guess[i][j]));
+            }
+            // test symmetry
+            for (int j = 0; j < nfunctions; j++)
+            {
+                for (int k = 0; k < nfunctions; k++)
+                {
+                    if (basis->guess[i][j * nfunctions + k] !=
+                        basis->guess[i][k * nfunctions + j])
+                    {
+                        flag = 1;
+                        goto end;
+                    }
+                }
+            }
+        }
+        else
+        {
+            flag = 1;
+        }
+end:        
+        if (flag == 1)
+        {
+            memset (basis->guess[i], 0, sizeof(double) * nfunctions * nfunctions);          
+        }
+    }
+    
+    return CINT_STATUS_SUCCESS;
+}
+
+
 CIntStatus_t CInt_packBasisSet (BasisSet_t basis,
                                 void **buf,
                                 int *bufsize)
@@ -782,8 +861,14 @@ CIntStatus_t CInt_loadBasisSet (BasisSet_t basis, char *bsfile, char *molfile)
         return status;
     }
     
-    //parse xyz
+    // parse xyz
     if ((status = parse_molecule (basis)) != CINT_STATUS_SUCCESS)
+    {
+        return status;
+    }
+
+    // import guess
+    if ((status = import_guess (bsfile, basis)) != CINT_STATUS_SUCCESS)
     {
         return status;
     }
@@ -858,3 +943,14 @@ int CInt_getAtomStartInd (BasisSet_t basis, int atomid)
     return (basis->s_start_id[atomid]);
 }
 
+
+void CInt_getInitialGuess (BasisSet_t basis, int atomid, double **guess,
+                           int *spos, int *epos)
+{
+    const int eid = basis->eid[atomid] - 1;
+    *guess = basis->guess[basis->bs_eptr[eid]];
+    const int start_shell = basis->s_start_id[atomid];
+    const int end_shell = basis->s_start_id[atomid + 1];
+    *spos = basis->f_start_id[start_shell];
+    *epos = basis->f_end_id[end_shell - 1];
+}
