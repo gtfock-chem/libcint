@@ -120,6 +120,8 @@ void CInt_getInitialGuess( BasisSet_t basis,
                            int *spos,
                            int *epos );
 
+double CInt_getNucEnergy (BasisSet_t basis);
+
 // two electron integrals
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))

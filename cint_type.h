@@ -71,6 +71,8 @@ struct BasisSet
     int nelectrons;
     double **guess;
 
+    double ene_nuc;
+
     // basis
     int bs_natoms;
     int basistype;

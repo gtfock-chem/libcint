@@ -491,6 +491,21 @@ CIntStatus_t import_molecule (char *file, BasisSet_t basis)
             file, natoms);
         return CINT_STATUS_FILEIO_FAILED;
     }
+
+    // compute nuc energy
+    double ene = 0.0;
+    for (int A = 0; A < natoms; A++)
+    {
+        for (int B = A + 1; B < natoms; B++)
+        {
+            double dx = basis->xn[A] - basis->xn[B];
+            double dy = basis->yn[A] - basis->yn[B];
+            double dz = basis->zn[A] - basis->zn[B];
+            double R = sqrt(dx * dx + dy * dy + dz * dz);
+            ene += basis->charge[A] * basis->charge[B] / R;
+        }
+    }
+    basis->ene_nuc = ene;
     
     fclose (fp);
     
@@ -953,4 +968,10 @@ void CInt_getInitialGuess (BasisSet_t basis, int atomid, double **guess,
     const int end_shell = basis->s_start_id[atomid + 1];
     *spos = basis->f_start_id[start_shell];
     *epos = basis->f_end_id[end_shell - 1];
+}
+
+
+double CInt_getNucEnergy (BasisSet_t basis)
+{
+    return basis->ene_nuc;
 }
