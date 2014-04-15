@@ -762,6 +762,7 @@ CIntStatus_t import_guess (char *file, BasisSet_t basis)
                     goto end;
                 }
                 sscanf (line, "%le", &(basis->guess[i][j]));
+                basis->guess[i][j] /= 2.0;
             }
             // test symmetry
             for (int j = 0; j < nfunctions; j++)
