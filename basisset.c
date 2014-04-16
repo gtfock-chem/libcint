@@ -241,6 +241,13 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
         eid = basis->eid[i];    
         atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
         atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
+        if (basis->bs_eptr[eid - 1] == -1)
+        {
+        #ifndef __INTEL_OFFLOAD
+            CINT_PRINTF (1, "atom %d is not supported\n", i);
+            return CINT_STATUS_INVALID_VALUE;
+        #endif    
+        }
         basis->s_start_id[i] = nshells;
         for (uint32_t j = atom_start; j < atom_end; j++) {
             basis->f_start_id[nshells + j - atom_start] = nfunctions;
