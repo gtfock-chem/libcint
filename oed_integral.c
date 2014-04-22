@@ -175,6 +175,7 @@ CIntStatus_t CInt_createOED (BasisSet_t basis, OED_t *oed)
 CIntStatus_t CInt_destroyOED (OED_t  oed)
 {
     free (oed->zcore);
+    free (oed->zcore2);
     free (oed->icore);
     free (oed->alpha);
     free (oed->cc);

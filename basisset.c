@@ -147,11 +147,10 @@ CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
 
 CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
 {
-    int i;
     free (basis->f_start_id);
     free (basis->f_end_id);
 
-    for (i = 0; i < basis->bs_nshells; i++)
+    for (int i = 0; i < basis->bs_nshells; i++)
     {
         ALIGNED_FREE (basis->bs_cc[i]);
         ALIGNED_FREE (basis->bs_exp[i]);
@@ -161,6 +160,14 @@ CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
     free (basis->bs_exp);
     free (basis->bs_norm);
 
+    if (basis->guess != NULL)
+    {
+        for (int i = 0; i < basis->bs_natoms; i++)
+        {
+            free (basis->guess[i]);
+        }
+        free (basis->guess);
+    }    
     free (basis->eid);
     free (basis->xn);
     free (basis->yn);
