@@ -16,7 +16,8 @@
 #define SLEN         5
 #define MAXNS        3
 #define MAXATOMNAME  2
-#define A2BOHR       1.889726
+//#define A2BOHR       1.889726
+#define A2BOHR       (1.0/0.52917720859)
 #define CARTESIAN    0
 #define SPHERICAL    1
 
