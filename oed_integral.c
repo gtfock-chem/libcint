@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "oed_integral.h"
 #include "basisset.h"
@@ -418,7 +419,7 @@ CIntStatus_t CInt_computePairCoreH (BasisSet_t basis, OED_t oed,
     {
         for (i = 0; i < ni; i++)
         {
-            if (oed->zcore[nfirst - 1 + i] < 1e-14)
+            if (fabs(oed->zcore[nfirst - 1 + i]) < 1e-13)
             {
                 oed->zcore[nfirst - 1 + i] = 0.0;
             }
