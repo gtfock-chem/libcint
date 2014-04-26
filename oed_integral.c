@@ -414,6 +414,17 @@ CIntStatus_t CInt_computePairCoreH (BasisSet_t basis, OED_t oed,
                            &(oed->spheric), &(oed->screen),
                            oed->icore, &ni, &nfirst, oed->zcore);
 
+    if (ni != 0)
+    {
+        for (i = 0; i < ni; i++)
+        {
+            if (oed->zcore[nfirst - 1 + i] < 1e-14)
+            {
+                oed->zcore[nfirst - 1 + i] = 0.0;
+            }
+        }
+    }
+
     *integrals = &(oed->zcore[nfirst - 1]);
     if (ni != 0 && ni2 != 0)
     {
