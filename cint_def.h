@@ -185,5 +185,10 @@ void CInt_offload_getMaxMemory( ERD_t erd,
                                 double *mem_cpu );
 #endif
 
+#define CINT_ASSERT(condition) if (!(condition)) { \
+    fprintf(stderr, "ASSERTION FAILED: %s in %s:%d\n", #condition, __FILE__, __LINE__); \
+    fflush(stderr); \
+    abort(); \
+}
 
 #endif /* __CINT_DEF_H__ */

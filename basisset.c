@@ -132,13 +132,7 @@ CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
 {
     BasisSet_t basis;
     basis = (BasisSet_t )malloc (sizeof(struct BasisSet));
-    if (NULL == basis)
-    {
-#ifndef __INTEL_OFFLOAD
-        CINT_PRINTF (1, "memory allocation failed\n");
-#endif
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(basis != NULL);
     memset (basis, 0, sizeof(struct BasisSet));
 
     *_basis = basis;
@@ -221,21 +215,15 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     basis->minexp = (double*)malloc (sizeof(double) * nshells);
     basis->norm = (double **)malloc (sizeof(double *) * nshells);
     basis->momentum = (uint32_t *)malloc (sizeof(uint32_t) * nshells);   
-    if (NULL == basis->f_start_id ||
-        NULL == basis->f_end_id ||
-        NULL == basis->s_start_id ||
-        NULL == basis->xyz0 ||
-        NULL == basis->nexp ||
-        NULL == basis->momentum ||
-        NULL == basis->cc ||
-        NULL == basis->exp ||
-        NULL == basis->norm)
-    {
-    #ifndef __INTEL_OFFLOAD
-        CINT_PRINTF (1, "memory allocation failed\n");
-    #endif
-        return CINT_STATUS_ALLOC_FAILED;    
-    }
+    CINT_ASSERT(basis->s_start_id != NULL);
+    CINT_ASSERT(basis->f_start_id != NULL);
+    CINT_ASSERT(basis->f_end_id != NULL);
+    CINT_ASSERT(basis->xyz0 != NULL);
+    CINT_ASSERT(basis->nexp != NULL);
+    CINT_ASSERT(basis->cc != NULL);
+    CINT_ASSERT(basis->minexp != NULL);
+    CINT_ASSERT(basis->norm != NULL);
+    CINT_ASSERT(basis->momentum != NULL);
     basis->nshells = nshells;
 
     // parse molecules
@@ -249,13 +237,8 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
         eid = basis->eid[i];    
         atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
         atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
-        if (basis->bs_eptr[eid - 1] == -1)
-        {
-        #ifndef __INTEL_OFFLOAD
-            CINT_PRINTF (1, "atom %d is not supported\n", i);
-            return CINT_STATUS_INVALID_VALUE;
-        #endif    
-        }
+        /* Atom not supported */
+        CINT_ASSERT(basis->bs_eptr[eid - 1] != -1);
         basis->s_start_id[i] = nshells;
         for (uint32_t j = atom_start; j < atom_end; j++) {
             basis->f_start_id[nshells + j - atom_start] = nfunctions;
@@ -324,17 +307,11 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis, void *buf) {
     basis->zn = (double *)malloc (sizeof(double) * basis->natoms);
     basis->charge = (double *)malloc (sizeof(double) * basis->natoms); 
     basis->eid = (int *)malloc (sizeof(int) * basis->natoms);
-    if (NULL == basis->xn ||
-        NULL == basis->yn ||
-        NULL == basis->zn ||
-        NULL == basis->charge ||
-        NULL == basis->eid)
-    {
-    #ifndef __INTEL_OFFLOAD
-        CINT_PRINTF (1, "memory allocation failed\n");
-    #endif
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(basis->xn != NULL);
+    CINT_ASSERT(basis->yn != NULL);
+    CINT_ASSERT(basis->zn != NULL);
+    CINT_ASSERT(basis->charge != NULL);
+    CINT_ASSERT(basis->eid != NULL);
     memcpy (basis->xn, &(_buf[offset]), sizeof(double) * basis->natoms);
     offset += sizeof(double) * basis->natoms;
     memcpy (basis->yn, &(_buf[offset]), sizeof(double) * basis->natoms);
@@ -352,19 +329,13 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis, void *buf) {
     basis->bs_atom_start = (int *)malloc (sizeof(int) * (basis->bs_natoms + 1)); 
     basis->bs_momentum = (int *)malloc (sizeof(int) * basis->bs_nshells);
     basis->bs_nexp = (int *)malloc (sizeof(int) * basis->bs_nshells);
-    if (NULL == basis->bs_atom_start ||
-        NULL == basis->bs_eptr ||
-        NULL == basis->bs_nexp ||
-        NULL == basis->bs_cc ||
-        NULL == basis->bs_norm ||
-        NULL == basis->bs_exp ||
-        NULL == basis->bs_momentum)
-    {
-    #ifndef __INTEL_OFFLOAD
-        CINT_PRINTF (1, "memory allocation failed\n");
-    #endif
-        return CINT_STATUS_ALLOC_FAILED;    
-    }
+    CINT_ASSERT(basis->bs_cc != NULL);
+    CINT_ASSERT(basis->bs_exp != NULL);
+    CINT_ASSERT(basis->bs_norm != NULL);
+    CINT_ASSERT(basis->bs_eptr != NULL);
+    CINT_ASSERT(basis->bs_atom_start != NULL);
+    CINT_ASSERT(basis->bs_momentum != NULL);
+    CINT_ASSERT(basis->bs_nexp != NULL);
 
     memcpy (basis->bs_nexp, &(_buf[offset]), sizeof(int) * basis->bs_nshells);
     offset += sizeof(int) * basis->bs_nshells;
@@ -374,15 +345,9 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis, void *buf) {
         basis->bs_cc[i] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
         basis->bs_exp[i] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
         basis->bs_norm[i] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
-        if (NULL == basis->bs_cc[i] ||
-            NULL == basis->bs_exp[i] ||
-            NULL == basis->bs_norm[i])
-        {
-        #ifndef __INTEL_OFFLOAD
-            CINT_PRINTF (1, "memory allocation failed\n");
-        #endif
-            return CINT_STATUS_ALLOC_FAILED;    
-        }
+        CINT_ASSERT(basis->bs_cc[i] != NULL);
+        CINT_ASSERT(basis->bs_exp[i] != NULL);
+        CINT_ASSERT(basis->bs_norm[i] != NULL);
         memcpy (basis->bs_exp[i], &(_buf[offset]), sizeof(double) * nexp);
         offset += sizeof(double) * nexp;
         memcpy (basis->bs_cc[i], &(_buf[offset]), sizeof(double) * nexp);
@@ -605,20 +570,15 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
     basis->bs_exp = (double **)malloc (sizeof(double *) * nshells);
     basis->bs_momentum = (int *)malloc (sizeof(int) * nshells);
     basis->bs_eid = (int *)malloc (sizeof(int) * natoms);
-    if (NULL == basis->bs_atom_start ||
-        NULL == basis->bs_eptr ||
-        NULL == basis->bs_nexp ||
-        NULL == basis->bs_cc ||
-        NULL == basis->bs_exp ||
-        NULL == basis->bs_norm ||
-        NULL == basis->bs_momentum ||
-        NULL == basis->bs_eid)
-    {
-        CINT_PRINTF (1, "memory allocation failed\n");
-        return CINT_STATUS_ALLOC_FAILED;    
-    }
-    for (i = 0; i < ELEN; i++)
-    {
+    CINT_ASSERT(basis->bs_eptr != NULL);
+    CINT_ASSERT(basis->bs_atom_start != NULL);
+    CINT_ASSERT(basis->bs_nexp != NULL);
+    CINT_ASSERT(basis->bs_cc != NULL);
+    CINT_ASSERT(basis->bs_norm != NULL);
+    CINT_ASSERT(basis->bs_exp != NULL);
+    CINT_ASSERT(basis->bs_momentum != NULL);
+    CINT_ASSERT(basis->bs_eid != NULL);
+    for (i = 0; i < ELEN; i++) {
         basis->bs_eptr[i] = -1;
     }
     
@@ -670,13 +630,9 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
                         basis->bs_cc[nshells] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
                         basis->bs_exp[nshells] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
                         basis->bs_norm[nshells] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
-                        if (NULL == basis->bs_cc[nshells] ||
-                            NULL == basis->bs_exp[nshells] ||
-                            NULL == basis->bs_norm[nshells])
-                        {
-                            CINT_PRINTF (1, "memory allocation failed\n");
-                            return CINT_STATUS_ALLOC_FAILED;    
-                        }
+                        assert(basis->bs_cc[nshells] != NULL);
+                        assert(basis->bs_exp[nshells] != NULL);
+                        assert(basis->bs_norm[nshells] != NULL);
                         for (j = 0; j < SLEN; j++)
                         {
                             if (str[i] == mtable[j])

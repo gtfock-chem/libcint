@@ -40,14 +40,10 @@ static CIntStatus_t create_vrrtable(BasisSet_t basis, ERD_t erd) {
     const int tablesize = max_shellp + 1;
     const int total_combinations = (max_shellp + 1) * (max_shellp + 2) * (max_shellp + 3) / 6;
     int **vrrtable = (int **)malloc(sizeof(int *) * tablesize);
+    CINT_ASSERT(vrrtable != NULL);
 
     int *vrrtable__ = (int *)malloc(sizeof(int) * 4 * total_combinations);
-    if (NULL == vrrtable || NULL == vrrtable__) {
-#ifndef __INTEL_OFFLOAD
-        CINT_PRINTF(1, "memory allocation failed\n");
-#endif
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(vrrtable__ != NULL);
 
     int n = 0;
     for(int shella = 0; shella <= max_shellp; shella++)
@@ -80,48 +76,25 @@ static CIntStatus_t destroy_vrrtable(ERD_t erd) {
 
 
 CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {      
-    if (nthreads <= 0) {
-#ifndef __INTEL_OFFLOAD
-        CINT_PRINTF(1, "invalid number of threads\n");
-#endif
-        return CINT_STATUS_INVALID_VALUE;
-    }
+    CINT_ASSERT(nthreads > 0);
 
     // malloc erd
     ERD_t e = (ERD_t)calloc(1, sizeof(struct ERD));
-    if (NULL == e) {
-#ifndef __INTEL_OFFLOAD
-        CINT_PRINTF(1, "memory allocation failed\n");
-#endif
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(e != NULL);
     erd_max_scratch(basis, e);
 
     // memory scratch memory
     e->nthreads = nthreads;
     e->buffer = (double **)malloc(nthreads * sizeof(double *));
-    if (e->buffer == NULL) {
-#ifndef __INTEL_OFFLOAD
-        CINT_PRINTF(1, "memory allocation failed\n");
-#endif
-        return CINT_STATUS_ALLOC_FAILED;
-    }    
+    CINT_ASSERT(e->buffer != NULL);
     for (int i = 0; i < nthreads; i++) {
-        e->buffer[i] =
-            (double *)ALIGNED_MALLOC(e->capacity * sizeof(double));
-        if (e->buffer[i] == NULL) {
-    #ifndef __INTEL_OFFLOAD
-            CINT_PRINTF(1, "memory allocation failed\n");
-    #endif
-            return CINT_STATUS_ALLOC_FAILED;
-        }
+        e->buffer[i] = (double *)ALIGNED_MALLOC(e->capacity * sizeof(double));
+        CINT_ASSERT(e->buffer[i] != NULL);
     }
 
     // create vrr table
     const CIntStatus_t status = create_vrrtable(basis, e);
-    if (status != CINT_STATUS_SUCCESS) {
-        return status;
-    }
+    CINT_ASSERT(status == CINT_STATUS_SUCCESS);
     CINT_INFO("totally use %.3lf MB (%.3lf MB per thread)",
         (e->fp_memory_opt * sizeof(double)
         + e->int_memory_opt * sizeof(int)) * nthreads/1024.0/1024.0,

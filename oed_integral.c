@@ -118,11 +118,7 @@ CIntStatus_t CInt_createOED (BasisSet_t basis, OED_t *oed)
     int max_nexp;
     
     o = (OED_t )calloc (1, sizeof(struct OED));
-    if (NULL == o)
-    {
-        CINT_PRINTF (1, "memory allocation failed\n");
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(o != NULL);
     o->ncsum = 2;
     o->ncgto1 = 1;
     o->ncgto2 = 1;
@@ -139,30 +135,20 @@ CIntStatus_t CInt_createOED (BasisSet_t basis, OED_t *oed)
     _maxnumExp (basis, &max_nexp);
     o->cc = (double *)malloc (2 * max_nexp * sizeof(double));
     o->alpha = (double *)malloc (2 * max_nexp * sizeof(double));
-    if (NULL == o->cc || NULL == o->alpha)
-    {
-        CINT_PRINTF (1, "memory allocation failed\n");
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(o->cc != NULL);
+    CINT_ASSERT(o->alpha != NULL);
     o->coef_offset = (int *)malloc (basis->nshells * sizeof(int));
     o->exp_offset = (int *)malloc (basis->nshells * sizeof(int));
-    if (NULL == o->coef_offset || NULL == o->exp_offset)
-    {
-        CINT_PRINTF (1, "memory allocation failed\n");
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(o->coef_offset != NULL);
+    CINT_ASSERT(o->exp_offset != NULL);
         
     oed_max_scratch (basis, o);
     o->zcore = (double *)malloc (o->fp_memory_opt * sizeof(double));
     o->zcore2 = (double *)malloc (o->fp_memory_opt * sizeof(double));
     o->icore = (int *)malloc (o->int_memory_opt * sizeof(int));
-    if (NULL == o->zcore ||
-        NULL == o->zcore2 ||
-        NULL == o->icore)
-    {
-        CINT_PRINTF (1, "memory allocation failed\n");
-        return CINT_STATUS_ALLOC_FAILED;
-    }
+    CINT_ASSERT(o->zcore != NULL);
+    CINT_ASSERT(o->zcore2 != NULL);
+    CINT_ASSERT(o->icore != NULL);
     
     o->zmax = o->fp_memory_opt;
     o->imax = o->int_memory_opt;
