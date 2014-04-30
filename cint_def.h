@@ -3,6 +3,7 @@
 
 #include "cint_type.h"
 #include <stdint.h>
+#include <unistd.h>
 
 typedef struct OED *OED_t;
 typedef struct ERD *ERD_t;
@@ -186,8 +187,8 @@ void CInt_offload_getMaxMemory( ERD_t erd,
 #endif
 
 #define CINT_ASSERT(condition) if (!(condition)) { \
-    fprintf(stderr, "ASSERTION FAILED: %s in %s:%d\n", #condition, __FILE__, __LINE__); \
-    fflush(stderr); \
+    dprintf(2, "ASSERTION FAILED: %s in %s:%d\n", #condition, __FILE__, __LINE__); \
+    fsync(2); \
     abort(); \
 }
 
