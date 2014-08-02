@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#ifdef HAS_MALLOC_H
-#include <malloc.h>
-#endif
 #include <math.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -13,6 +10,10 @@
 
 #include "config.h"
 #include "basisset.h"
+
+#ifdef HAS_MALLOC_H
+#include <malloc.h>
+#endif
 
 #define ELEN         50
 #define SLEN         5
