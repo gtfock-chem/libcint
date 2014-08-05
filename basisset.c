@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#ifdef HAS_MALLOC_H
 #include <malloc.h>
+#endif
 #include <math.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -208,7 +210,11 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     basis->s_start_id = (uint32_t *)malloc (sizeof(uint32_t) * (natoms + 1));
     basis->f_start_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->f_end_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
+#ifdef HAS_MALLOC_H
     basis->xyz0 = (double *)memalign(32, sizeof(double) * nshells * 4);
+#else
+    basis->xyz0 = (double *)ALIGNED_MALLOC(sizeof(double) * nshells * 4);
+#endif
     basis->nexp = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->cc = (double **)malloc (sizeof(double *) * nshells);
     basis->exp = (double **)malloc (sizeof(double *) * nshells);
