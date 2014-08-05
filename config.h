@@ -5,6 +5,10 @@
 #include <stdio.h>
 
 
+#ifndef __APPLE__
+#define HAS_MALLOC_H
+#endif
+
 #define _DEBUG_LEVEL_    1   //  0 to 10,
                              //  0 is no debug print info at all,
                              //  10 is full info
