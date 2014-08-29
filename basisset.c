@@ -697,7 +697,8 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
 
 CIntStatus_t import_guess (char *file, BasisSet_t basis)
 {
-    char *dir = dirname (file);
+    char *dir = strdup(file);
+    dir = dirname(dir);
     char fname[1024];
     char line[1024];
     
@@ -766,7 +767,8 @@ end:
             memset (basis->guess[i], 0, sizeof(double) * nfunctions * nfunctions);          
         }
     }
-    
+
+    free(dir);
     return CINT_STATUS_SUCCESS;
 }
 
