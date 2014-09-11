@@ -3,7 +3,7 @@
 
 
 #define OED_SPHERIC 1
-#define OED_SCREEN 1
+#define OED_SCREEN 0
 
 
 extern void oed__gener_kin_batch_ (int *imax, int *zmax,
