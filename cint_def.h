@@ -28,6 +28,10 @@ extern __declspec(target(mic)) ERD_t erd_mic;
 extern __declspec(target(mic)) BasisSet_t basis_mic;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // basisset
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -184,6 +188,10 @@ CIntStatus_t CInt_offload_destroyERD( ERD_t erd );
 void CInt_offload_getMaxMemory( ERD_t erd,
                                 double *mem_mic,
                                 double *mem_cpu );
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #define CINT_ASSERT(condition) if (!(condition)) { \
