@@ -74,6 +74,7 @@ struct BasisSet
     double ene_nuc;
 
     // basis
+    int bs_nelements;
     int bs_natoms;
     int basistype;
     int *bs_eid;
