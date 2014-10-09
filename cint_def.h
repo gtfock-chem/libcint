@@ -48,6 +48,14 @@ CIntStatus_t CInt_unpackBasisSet( BasisSet_t basis,
 #pragma offload_attribute(pop)
 #endif
 
+CIntStatus_t CInt_importBasisSet(BasisSet_t basis,
+                                 int natoms, int *Zs,
+                                 double *X, double *Y, double *Z,
+                                 int nprims, int nshells, int pure,
+                                 int *shells_p_atom,
+                                 int *prims_p_shell,
+                                 int *L, double *cc, double *alpha);
+
 CIntStatus_t CInt_loadBasisSet( BasisSet_t basis,
                                 char *bsfile,
                                 char *xyzfile );
