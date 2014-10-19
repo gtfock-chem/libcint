@@ -1095,7 +1095,7 @@ void CInt_getInitialGuess (BasisSet_t basis, int atomid, double **guess,
 }
 
 
-void CInt_getTotalCharge(BasisSet_t basis)
+double CInt_getTotalCharge(BasisSet_t basis)
 {
     return basis->Q;
 }
