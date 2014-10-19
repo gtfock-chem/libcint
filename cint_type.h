@@ -66,10 +66,11 @@ struct BasisSet
     int *eid;
     double *xn;
     double *yn;
-    double *zn;   
+    double *zn;
     double *charge;
     int nelectrons;
     double **guess;
+    double Q;
 
     double ene_nuc;
 

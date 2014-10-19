@@ -418,6 +418,8 @@ CIntStatus_t import_molecule (char *file, BasisSet_t basis)
         CINT_PRINTF (1, "file %s has a wrong format\n", file);
         return CINT_STATUS_FILEIO_FAILED; 
     }
+    basis->Q = atof(line);
+    printf("Q = %lf\n", basis->Q);
     
     basis->xn = (double *)malloc (sizeof(double) * basis->natoms);
     basis->yn = (double *)malloc (sizeof(double) * basis->natoms);
@@ -695,7 +697,7 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
 }
 
 
-CIntStatus_t import_guess (char *file, BasisSet_t basis)
+CIntStatus_t import_guess(char *file, BasisSet_t basis)
 {
     char *dir;
     if (file != NULL) {
@@ -730,7 +732,7 @@ CIntStatus_t import_guess (char *file, BasisSet_t basis)
                 nfunctions += (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
             }
         }
-        basis->guess[i] = (double *)malloc (sizeof(double) * nfunctions * nfunctions);
+        basis->guess[i] = (double *)malloc(sizeof(double) * nfunctions * nfunctions);
 
         // read guess
         eid = (eid >= ELEN ? 0 : eid);
@@ -1090,6 +1092,12 @@ void CInt_getInitialGuess (BasisSet_t basis, int atomid, double **guess,
     const int end_shell = basis->s_start_id[atomid + 1];
     *spos = basis->f_start_id[start_shell];
     *epos = basis->f_end_id[end_shell - 1];
+}
+
+
+void CInt_getTotalCharge(BasisSet_t basis)
+{
+    return basis->Q;
 }
 
 
