@@ -1067,7 +1067,7 @@ int CInt_getMaxShellDim (BasisSet_t basis)
 
 int CInt_getNumOccOrb (BasisSet_t basis)
 {
-    return (basis->nelectrons/2);
+    return ((basis->nelectrons - basis->Q)/2);
 }
 
 
