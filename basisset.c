@@ -749,15 +749,14 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
                     goto end;
                 }
                 sscanf (line, "%le", &(basis->guess[i][j]));
-                basis->guess[i][j] /= 2.0;
             }
             // test symmetry
             for (int j = 0; j < nfunctions; j++)
             {
                 for (int k = 0; k < nfunctions; k++)
                 {
-                    if (basis->guess[i][j * nfunctions + k] !=
-                        basis->guess[i][k * nfunctions + j])
+                    if (basis->guess[i][j * nfunctions + k] -
+                        basis->guess[i][k * nfunctions + j] > 1e-12)
                     {
                         flag = 1;
                         goto end;
