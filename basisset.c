@@ -295,6 +295,8 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis, void *buf)
     CIntStatus_t ret;
     char *_buf = (char *)buf;
     int offset = 0;
+    memcpy(&(basis->Q), &(_buf[offset]), sizeof(double));
+    offset += sizeof(double);
     memcpy(&(basis->natoms), &(_buf[offset]), sizeof(int));
     offset += sizeof(int);
     memcpy(&(basis->nelectrons), &(_buf[offset]), sizeof(int));
@@ -419,7 +421,6 @@ CIntStatus_t import_molecule (char *file, BasisSet_t basis)
         return CINT_STATUS_FILEIO_FAILED; 
     }
     basis->Q = atof(line);
-    printf("Q = %lf\n", basis->Q);
     
     basis->xn = (double *)malloc (sizeof(double) * basis->natoms);
     basis->yn = (double *)malloc (sizeof(double) * basis->natoms);
@@ -792,13 +793,15 @@ CIntStatus_t CInt_packBasisSet (BasisSet_t basis,
     int i;
     int nexp;
     
-    _bufsize = 6 * sizeof(int) + 4 * basis->natoms * sizeof(double) +                
+    _bufsize = 6 * sizeof(int) + (1 + 4 * basis->natoms) * sizeof(double) +                
                (2 * basis->bs_nshells + basis->bs_nelements + basis->natoms
                 + basis->bs_natoms + 2) * sizeof(int) +
                 basis->bs_totnexp * 3 * sizeof(double);
     _buf = (char *)malloc(_bufsize);
     assert(_buf != NULL);
-    offset = 0;    
+    offset = 0;
+    memcpy(&(_buf[offset]), &(basis->Q), sizeof(double));
+    offset += sizeof(double);
     memcpy(&(_buf[offset]), &(basis->natoms), sizeof(int));
     offset += sizeof(int);
     memcpy(&(_buf[offset]), &(basis->nelectrons), sizeof(int));
