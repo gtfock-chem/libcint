@@ -133,7 +133,7 @@ void CInt_getInitialGuess( BasisSet_t basis,
                            int *spos,
                            int *epos );
 
-double CInt_getTotalCharge(BasisSet_t basis);
+int CInt_getTotalCharge(BasisSet_t basis);
 
 double CInt_getNucEnergy (BasisSet_t basis);
 

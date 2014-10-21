@@ -70,7 +70,7 @@ struct BasisSet
     double *charge;
     int nelectrons;
     double **guess;
-    double Q;
+    int Q;
 
     double ene_nuc;
 
