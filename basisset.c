@@ -726,53 +726,48 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
         {
             if (basis->basistype == SPHERICAL)
             {
-                nfunctions += 2 * basis->bs_momentum[j] + 1;
+                nfunctions +=
+                    2 * basis->bs_momentum[j] + 1;
             }
             else if (basis->basistype == CARTESIAN)
             {
-                nfunctions += (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
+                nfunctions +=
+                    (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
             }
         }
-        basis->guess[i] = (double *)malloc(sizeof(double) * nfunctions * nfunctions);
+        basis->guess[i] =
+            (double *)malloc(sizeof(double) * nfunctions * nfunctions);
 
         // read guess
         eid = (eid >= ELEN ? 0 : eid);
         sprintf(fname, "%s/%s.dat", dir, etable[eid]);
         FILE *fp = fopen(fname, "r");
         int flag = 0;
-        if (fp != NULL)
-        {
-            for (int j = 0; j < nfunctions * nfunctions; j++)
-            {
-                if (fgets (line, 1024, fp) == NULL)
-                {
+        if (fp != NULL) {
+            for (int j = 0; j < nfunctions * nfunctions; j++) {
+                if (fgets (line, 1024, fp) == NULL) {
                     flag = 1;
                     goto end;
                 }
                 sscanf (line, "%le", &(basis->guess[i][j]));
             }
             // test symmetry
-            for (int j = 0; j < nfunctions; j++)
-            {
-                for (int k = 0; k < nfunctions; k++)
-                {
+            for (int j = 0; j < nfunctions; j++) {
+                for (int k = 0; k < nfunctions; k++) {
                     if (basis->guess[i][j * nfunctions + k] -
-                        basis->guess[i][k * nfunctions + j] > 1e-12)
-                    {
+                        basis->guess[i][k * nfunctions + j] > 1e-12) {
                         flag = 1;
                         goto end;
                     }
                 }
             }
-        }
-        else
-        {
+        } else {
             flag = 1;
         }
 end:        
-        if (flag == 1)
-        {
-            memset (basis->guess[i], 0, sizeof(double) * nfunctions * nfunctions);          
+        if (flag == 1) {
+            memset(basis->guess[i], 0,
+                sizeof(double) * nfunctions * nfunctions);          
         }
     }
     
@@ -1100,6 +1095,12 @@ void CInt_getInitialGuess (BasisSet_t basis, int atomid, double **guess,
 int CInt_getTotalCharge(BasisSet_t basis)
 {
     return basis->Q;
+}
+
+
+int CInt_getNneutral(BasisSet_t basis)
+{
+    return basis->nelectrons;
 }
 
 
