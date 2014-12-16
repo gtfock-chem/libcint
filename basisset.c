@@ -702,12 +702,11 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
 {
     char *dir;
     if (file != NULL) {
-        dir = strdup(file);
-        dir = dirname(dir);
+        dir = strdup(dirname(file));
     } else {
-        dir = "/";
+        dir = strdup("/");
     }
-    
+
     char fname[1024];
     char line[1024];    
     basis->guess = (double **)malloc (sizeof(double *) * basis->bs_natoms); 
