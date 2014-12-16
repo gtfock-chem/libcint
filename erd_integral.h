@@ -5,6 +5,7 @@
 
 #define ERD_SCREEN true
 #define ERD_SPHERIC 1
+#define ERD_CARTESIAN 0
 
 
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))

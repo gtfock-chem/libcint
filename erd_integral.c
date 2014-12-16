@@ -28,7 +28,7 @@ static void erd_max_scratch(BasisSet_t basis, ERD_t erd) {
             max_momentum, max_momentum,
             1.0, 1.0, 1.0, 2.0, 2.0, 2.0,
             3.0, 3.0, 3.0, 4.0, 4.0, 4.0,
-            ERD_SPHERIC);
+            basis->basistype);
     }
 }
 
@@ -165,7 +165,7 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
             basis->nexp, basis->momentum, basis->xyz0,
             (const double**)basis->exp, basis->minexp, (const double**)basis->cc, (const double**)basis->norm,
             erd->vrrtable,
-            ERD_SPHERIC,
+            basis->basistype,
             erd->capacity, &integrals_count, erd->buffer[tid]);
         *nints = integrals_count;
     }
