@@ -1,26 +1,31 @@
+/*
+ * Copyright (c) 2013-2015 Georgia Institute of Technology
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * The GNU Lesser General Public License is included in this distribution
+ * in the file COPYING.
+ */
+
 #ifndef __CINT_DEF_H__
 #define __CINT_DEF_H__
 
-#include "cint_type.h"
+#include <OptErd.h>
+#include <cint_type.h>
 #include <stdint.h>
 #include <unistd.h>
 
 typedef struct OED *OED_t;
 typedef struct ERD *ERD_t;
 typedef struct BasisSet *BasisSet_t;
-
-
-typedef enum
-{
-    CINT_STATUS_SUCCESS = 0,
-    CINT_STATUS_NOT_INITIALIZED = 1,
-    CINT_STATUS_ALLOC_FAILED = 2,
-    CINT_STATUS_INVALID_VALUE = 3,
-    CINT_STATUS_EXECUTION_FAILED = 4,
-    CINT_STATUS_INTERNAL_ERROR = 5,
-    CINT_STATUS_FILEIO_FAILED = 6,
-    CINT_STATUS_OFFLOAD_ERROR = 7
-} CIntStatus_t;
 
 
 #ifdef __INTEL_OFFLOAD
