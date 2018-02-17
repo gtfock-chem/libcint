@@ -210,6 +210,9 @@ CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
 }
 
 
+/* Create the data structure of the shells for the given molecule.
+ *
+ */
 CIntStatus_t parse_molecule (BasisSet_t basis)
 {
     int natoms;
@@ -223,8 +226,8 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     int atom_start;
     int atom_end;
 
-    // get lengths
-    natoms = basis->natoms;
+    // count number of shells in basis set for all atoms in the molecule
+    natoms = basis->natoms; // number of atoms in the molecule
     nshells = 0;
     for (uint32_t i = 0; i < natoms; i++) {
         eid = basis->eid[i];
@@ -233,32 +236,36 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
         nshells += atom_end - atom_start;
     }
     
+    // start of shell info for each atom
     basis->s_start_id = (uint32_t *)malloc (sizeof(uint32_t) * (natoms + 1));
+    // start and end indices of the functions for each shell;
+    // this is useful when constructing the Fock matrix
     basis->f_start_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
-    basis->f_end_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
+    basis->f_end_id   = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
+    // shell centers
 #ifdef HAS_MALLOC_H
     basis->xyz0 = (double *)memalign(32, sizeof(double) * nshells * 4);
 #else
     basis->xyz0 = (double *)ALIGNED_MALLOC(sizeof(double) * nshells * 4);
 #endif
-    basis->nexp = (uint32_t *)malloc(sizeof(uint32_t) * nshells);
-    basis->cc = (double **)malloc(sizeof(double *) * nshells);
-    basis->exp = (double **)malloc(sizeof(double *) * nshells);
-    basis->minexp = (double*)malloc(sizeof(double) * nshells);
-    basis->norm = (double **)malloc(sizeof(double *) * nshells);
-    basis->momentum = (uint32_t *)malloc(sizeof(uint32_t) * nshells);   
+    basis->nexp =     (uint32_t *)malloc(sizeof(uint32_t) * nshells); // number of primitives
+    basis->cc =       (double **) malloc(sizeof(double *) * nshells); // contraction coefs
+    basis->exp =      (double **) malloc(sizeof(double *) * nshells); // orbital exponents
+    basis->minexp =   (double *)  malloc(sizeof(double)   * nshells); // how used?
+    basis->norm =     (double **) malloc(sizeof(double *) * nshells); // how used?
+    basis->momentum = (uint32_t *)malloc(sizeof(uint32_t) * nshells); //
     CINT_ASSERT(basis->s_start_id != NULL);
     CINT_ASSERT(basis->f_start_id != NULL);
-    CINT_ASSERT(basis->f_end_id != NULL);
-    CINT_ASSERT(basis->xyz0 != NULL);
-    CINT_ASSERT(basis->nexp != NULL);
-    CINT_ASSERT(basis->cc != NULL);
-    CINT_ASSERT(basis->minexp != NULL);
-    CINT_ASSERT(basis->norm != NULL);
-    CINT_ASSERT(basis->momentum != NULL);
-    basis->nshells = nshells;
+    CINT_ASSERT(basis->f_end_id   != NULL);
+    CINT_ASSERT(basis->xyz0       != NULL);
+    CINT_ASSERT(basis->nexp       != NULL);
+    CINT_ASSERT(basis->cc         != NULL);
+    CINT_ASSERT(basis->minexp     != NULL);
+    CINT_ASSERT(basis->norm       != NULL);
+    CINT_ASSERT(basis->momentum   != NULL);
+    basis->nshells = nshells; // number of shells for this molecule
 
-    // parse molecules
+    // loop over atoms in the molecule
     nshells = 0;
     nfunctions = 0;
     maxdim = 0;
@@ -268,7 +275,7 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     for (uint32_t i = 0; i < natoms; i++) {
         eid = basis->eid[i];    
         atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
-        atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
+        atom_end   = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
         /* Atom not supported */
         CINT_ASSERT(basis->bs_eptr[eid - 1] != -1);
         basis->s_start_id[i] = nshells;
@@ -285,30 +292,30 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
                 max_nexp = basis->bs_nexp[j];
                 max_nexp_id = nshells + j - atom_start;
             }
-            basis->cc[nshells + j - atom_start] = basis->bs_cc[j];
-            basis->exp[nshells + j - atom_start] = basis->bs_exp[j];
+            basis->cc    [nshells + j - atom_start] = basis->bs_cc[j];
+            basis->exp   [nshells + j - atom_start] = basis->bs_exp[j];
             basis->minexp[nshells + j - atom_start] = vector_min(basis->nexp[nshells + j - atom_start], basis->exp[nshells + j - atom_start]);
-            basis->norm[nshells + j - atom_start] = basis->bs_norm[j];
+            basis->norm  [nshells + j - atom_start] = basis->bs_norm[j];
             if (basis->basistype == SPHERICAL) {
                 nfunctions += 2 * basis->bs_momentum[j] + 1;
-                maxdim = (2 * basis->bs_momentum[j] + 1) > maxdim ?
-                    (2 * basis->bs_momentum[j] + 1) : maxdim;
+                maxdim     = (2 * basis->bs_momentum[j] + 1) > maxdim ?
+                             (2 * basis->bs_momentum[j] + 1) : maxdim;
             }
             else if (basis->basistype == CARTESIAN) {
                 nfunctions += (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
-                maxdim = ((basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2) > maxdim ?
-                    ((basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2) : maxdim;
+                maxdim     = ((basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2) > maxdim ?
+                             ((basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2) : maxdim;
             }
             basis->f_end_id[nshells + j - atom_start] = nfunctions - 1;
         }
         nshells += atom_end - atom_start;
     }
     basis->s_start_id[natoms] = nshells;
-    basis->maxdim = maxdim;
-    basis->nfunctions = nfunctions;
-    basis->max_momentum = max_momentum;
-    basis->max_nexp = max_nexp;
-    basis->max_nexp_id = max_nexp_id;
+    basis->maxdim             = maxdim;       // max number of functions for a shell
+    basis->nfunctions         = nfunctions;   // total number of functions for molecule
+    basis->max_momentum       = max_momentum; // max angular momentum
+    basis->max_nexp           = max_nexp;     // max number of primitives per shell
+    basis->max_nexp_id        = max_nexp_id;  // index of the above
     
     return CINT_STATUS_SUCCESS;
 }
@@ -535,7 +542,14 @@ CIntStatus_t import_molecule (char *file, BasisSet_t basis)
 }
 
 
-/*
+/* Construct the basis set data structure from the basis set file.
+ * (No molecular information is used.)
+ *
+ * Shell information includes:
+ *   bs_momentum - angular momentum 0=s, 1=p, etc.
+ *   bs_cc[i][j] - contraction coefs for element i
+ *   bs_exp[i][j]- orbital exponents for element i
+ *
  * Handle sp shells by splitting them into separate s and p shells
  */
 CIntStatus_t import_basis (char *file, BasisSet_t basis)
@@ -627,14 +641,6 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
         basis->bs_eptr[i] = -1;
     }
 
-    /* Construct the basis set data structure.
-     *
-     * Shell information includes:
-     *   bs_momentum - angular momentum 0=s, 1=p, etc.
-     *   bs_cc[i][j] - contraction coefs for element i
-     *   bs_exp[i][j]- orbital exponents for element i
-     */
-    
     // get nshells
     rewind (fp);
     fgets (line, 1024, fp);
@@ -742,6 +748,21 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
 }
 
 
+/* Import SAD initial guesses.
+ * (No molecular information is used.)
+ *
+ * basis->guess[i][*] will contain the guess for element i in the basis set.
+ * Input "file" is filename for the basis set file; the guess files are assumed
+ * to be in same irectory as the basis set file.  Naming convention is C.dat
+ * for carbon, etc.
+ *
+ * If a guess file for an element is not found, or an inappropriate file is
+ * found (e.g., does not match number of functions because it is for a 
+ * different basis set), then a zero initial guess for that atom is used.
+ *
+ * Warning: no indication is given on whether initial guesses were successfully
+ * read.
+ */
 CIntStatus_t import_guess(char *file, BasisSet_t basis)
 {
     char *dir;
@@ -753,17 +774,20 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
 
     char fname[1024];
     char line[1024];    
+    // pointers to guess for each element in basis set
     basis->guess = (double **)malloc (sizeof(double *) * basis->bs_natoms); 
     if (basis->guess == NULL)
     {
         return CINT_STATUS_ALLOC_FAILED;
     }
      
+    // loop over elements in the basis set
     for (int i = 0; i < basis->bs_natoms; i++)
     {
         const int atom_start = basis->bs_atom_start[i];
         const int atom_end = basis->bs_atom_start[i + 1];
         int eid = basis->bs_eid[i];
+        // calculate number of functions for this atom
         int nfunctions = 0;
         for (int j = atom_start; j < atom_end; j++)
         {
@@ -778,6 +802,7 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
                     (basis->bs_momentum[j] + 1)*(basis->bs_momentum[j] + 2)/2;
             }
         }
+        // allocate space for guess for element i (not a global-sized matrix)
         basis->guess[i] =
             (double *)malloc(sizeof(double) * nfunctions * nfunctions);
 

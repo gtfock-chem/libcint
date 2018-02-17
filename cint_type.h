@@ -78,49 +78,52 @@ struct ERD
 
 struct BasisSet
 {
-    // atom
-    int natoms;        // number of atoms
-    int *eid;          // vector of atomic numbers
+    // molecular information from xyz file
+
+    int natoms;        // number of atoms in molecule
+    int *eid;          // atomic numbers
     double *xn;        // x coords
-    double *yn;        // x coords
-    double *zn;        // x coords
+    double *yn;        // y coords
+    double *zn;        // z coords
     double *charge;    // double precision version of atomic numbers
-    int nelectrons;    // number of atoms (redundant)
-    double **guess;
+    int nelectrons;    // sum of atomic numbers in molecule (not really num electrons)
+    double **guess;    // initial guesses for each element in basis set (should not be in this section)
     int Q;             // net charge read from xyz file (not related to nelectrons)
 
-    double ene_nuc;    // nuclear energy computed in import_molecule
+    double ene_nuc;    // nuclear energy (computed)
 
-    // basis
-    int bs_nelements;
-    int bs_natoms;
-    int basistype;
-    int *bs_eid;
-    int *bs_eptr;
-    int *bs_atom_start;
-    int bs_nshells;
-    int bs_totnexp;
-    int *bs_nexp;
-    double **bs_exp;
-    double **bs_cc;
-    double **bs_norm;
-    int *bs_momentum;
+    // basis set information from gbs file
+
+    int bs_nelements;  // max number of elements supported in basis set
+    int bs_natoms;     // number of elements in basis set
+    int basistype;     // Cartesian or spherical
+    int *bs_eid;       // atomic numbers of elements in basis set
+    int *bs_eptr;      // map atomic number to entry in basis set (array of len bs_nelements)
+    int *bs_atom_start;// start of element data in arrays of length nshells (array of length natoms+1)
+    int bs_nshells;    // number of shells in the basis set (not the molecule)
+    int bs_totnexp;    // total number of primitive functions in basis set
+    int *bs_nexp;      // number of primitive functions for shell
+    double **bs_exp;   // bs_exp[i] = orbital exponents for shell i
+    double **bs_cc;    // bs_cc[i]  = contraction coefs for shell i
+    double **bs_norm;  // bs_norm[i] = normalization constants for shell i
+    int *bs_momentum;  // bs_momentum[i] = angular momentum for shell i
     
-    // shell
-    uint32_t nshells;    
-    uint32_t nfunctions;    
-    uint32_t *f_start_id;
-    uint32_t *f_end_id;
-    uint32_t *s_start_id;
-    uint32_t *nexp;
-    double **exp;
-    double *minexp;
-    double **cc;
-    double **norm;
-    uint32_t *momentum;
-    double *xyz0;
+    // shell information for each shell in the given molecule
 
-    uint32_t maxdim; // max number of functions of a shell 
+    uint32_t nshells;    // number of shells in given molecule
+    uint32_t nfunctions; // number of basis functions for molecule
+    uint32_t *f_start_id;// offset for first basis function for each shell
+    uint32_t *f_end_id;
+    uint32_t *s_start_id;// start of shell info for each atom
+    uint32_t *nexp;      // number of primitives for each shell
+    double **exp;        // exponents for each shell in molecule
+    double *minexp;      // ?
+    double **cc;         // contraction coefficients for each shell in molecule
+    double **norm;       // ?
+    uint32_t *momentum;  // angular momentum for each shell in molecule
+    double *xyz0;        // centers for each shell in molecule, stored as linear array
+
+    uint32_t maxdim;     // max number of functions among all shells in molecule
     uint32_t max_momentum;
     uint32_t max_nexp;
     uint32_t max_nexp_id;

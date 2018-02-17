@@ -1,0 +1,18 @@
+CInt.h is the header that that should be included by external programs.
+External programs should not include any other headers.
+
+INTERFACE KLUDGES
+
+The second (comment) line in the xyz file contains the net charge
+of the system.
+
+The first line of the basis set file (gbs file) contains "spherical"
+or "cartesian" to indicate the basis set type.
+
+The SCF initial guess for the density matrix is constructed from
+the superposition of atomic densities (SAD).  The densities for 
+a few atoms are read automatically, but assumes you are using
+cc-pvdz.
+
+The SAD initial guess also assumes using a spherical basis.
+
