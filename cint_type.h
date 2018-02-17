@@ -79,17 +79,17 @@ struct ERD
 struct BasisSet
 {
     // atom
-    int natoms;
-    int *eid;
-    double *xn;
-    double *yn;
-    double *zn;
-    double *charge;
-    int nelectrons;
+    int natoms;        // number of atoms
+    int *eid;          // vector of atomic numbers
+    double *xn;        // x coords
+    double *yn;        // x coords
+    double *zn;        // x coords
+    double *charge;    // double precision version of atomic numbers
+    int nelectrons;    // number of atoms (redundant)
     double **guess;
-    int Q;
+    int Q;             // net charge read from xyz file (not related to nelectrons)
 
-    double ene_nuc;
+    double ene_nuc;    // nuclear energy computed in import_molecule
 
     // basis
     int bs_nelements;

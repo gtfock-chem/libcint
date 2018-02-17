@@ -61,6 +61,13 @@ static char mtable[SLEN] =
 };
 
 
+/* Normalize the shells
+ *
+ * On output, basis->bx_cc[][] structure will be altered.
+ * On output, basis->norm[] structure will be filled.
+ * Recognizes shells with zero orbital exponent.
+ * Code is a good example of looping through elements of a basis set.
+ */
 static void normalization (BasisSet_t basis)
 {
     double sum;
@@ -401,6 +408,15 @@ CIntStatus_t CInt_unpackBasisSet (BasisSet_t basis, void *buf)
 #endif
 
 
+/* Read the xyz file and put data into the BasisSet_t structure.
+ * 
+ * Net charge is read from comment line of xyz file.
+ * Atom positions are converted from Angstroms to Bohr.
+ * basis->eid[i] is element id, i.e., atomic number.
+ * basis->charge[i] is double precision version of eid.
+ * Nuclear energy is computed and stored in basis->ene_nuc;
+ * Warning: check that your xyz file does not use Fortran scientific notation.
+ */
 CIntStatus_t import_molecule (char *file, BasisSet_t basis)
 {
     FILE *fp;
@@ -519,6 +535,9 @@ CIntStatus_t import_molecule (char *file, BasisSet_t basis)
 }
 
 
+/*
+ * Handle sp shells by splitting them into separate s and p shells
+ */
 CIntStatus_t import_basis (char *file, BasisSet_t basis)
 {
     FILE *fp;
@@ -558,25 +577,24 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
         basis->basistype = SPHERICAL;
     }
 
-    // get number of atoms
+    // get number of atoms (elements in the basis set)
     natoms = 0;
     nshells = 0;
     bs_totnexp = 0;
     while (fgets (line, 1024, fp) != NULL)
     {
-        if (isalpha (line[0]))
+        if (isalpha (line[0])) // found next element
         {
-            // a new atom
             natoms++;
             while (fgets (line, 1024, fp) != NULL)
             {
-                if (isalpha (line[0]))
+                if (isalpha (line[0])) // found next shell
                 {
                     sscanf (line, "%s %d %lf",
                         str, &nexp, &beta);
-                    ns = strlen (str);               
-                    nshells += ns;
-                    bs_totnexp += ns * nexp;
+                    ns = strlen (str); // ns=1 for S,P,...; ns=2 for SP shell
+                    nshells += ns;     // total number of shells
+                    bs_totnexp += ns * nexp; // total number of primitive funcs
                 }
                 if (line[0] == '*')
                 {
@@ -585,29 +603,37 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
             }
          }
     }
-    basis->bs_natoms = natoms;
-    basis->bs_nshells = nshells;
-    basis->bs_totnexp = bs_totnexp;
+    basis->bs_natoms = natoms;       // number of elements
+    basis->bs_nshells = nshells;     // number of shells in the basis set (not the molecule)
+    basis->bs_totnexp = bs_totnexp;  // number of primitive functions
     basis->bs_nelements = ELEN;
-    basis->bs_eptr = (int *)malloc (sizeof(int) * basis->bs_nelements);
-    basis->bs_atom_start = (int *)malloc (sizeof(int) * (natoms + 1));
-    basis->bs_nexp = (int *)malloc (sizeof(int) * nshells);
-    basis->bs_cc = (double **)malloc (sizeof(double *) * nshells);
-    basis->bs_norm = (double **)malloc (sizeof(double *) * nshells);
-    basis->bs_exp = (double **)malloc (sizeof(double *) * nshells);
-    basis->bs_momentum = (int *)malloc (sizeof(int) * nshells);
-    basis->bs_eid = (int *)malloc (sizeof(int) * natoms);
-    CINT_ASSERT(basis->bs_eptr != NULL);
+    basis->bs_eptr       = (int *)malloc (sizeof(int) * basis->bs_nelements); // map atomic number to basis set entry index
+    basis->bs_atom_start = (int *)malloc (sizeof(int) * (natoms + 1));        // start of element data in arrays of length nshells
+    basis->bs_nexp       = (int *)malloc (sizeof(int) * nshells);             // for each shell, number of primitive functions
+    basis->bs_cc         = (double **)malloc (sizeof(double *) * nshells);    // for each shell, coefs
+    basis->bs_norm       = (double **)malloc (sizeof(double *) * nshells);    // for each shell, normalization constants
+    basis->bs_exp        = (double **)malloc (sizeof(double *) * nshells);    // for each shell, exponents
+    basis->bs_momentum   = (int *)malloc (sizeof(int) * nshells);
+    basis->bs_eid        = (int *)malloc (sizeof(int) * natoms);
+    CINT_ASSERT(basis->bs_eptr       != NULL);
     CINT_ASSERT(basis->bs_atom_start != NULL);
-    CINT_ASSERT(basis->bs_nexp != NULL);
-    CINT_ASSERT(basis->bs_cc != NULL);
-    CINT_ASSERT(basis->bs_norm != NULL);
-    CINT_ASSERT(basis->bs_exp != NULL);
-    CINT_ASSERT(basis->bs_momentum != NULL);
-    CINT_ASSERT(basis->bs_eid != NULL);
+    CINT_ASSERT(basis->bs_nexp       != NULL);
+    CINT_ASSERT(basis->bs_cc         != NULL);
+    CINT_ASSERT(basis->bs_norm       != NULL);
+    CINT_ASSERT(basis->bs_exp        != NULL);
+    CINT_ASSERT(basis->bs_momentum   != NULL);
+    CINT_ASSERT(basis->bs_eid        != NULL);
     for (i = 0; i < basis->bs_nelements; i++) {
         basis->bs_eptr[i] = -1;
     }
+
+    /* Construct the basis set data structure.
+     *
+     * Shell information includes:
+     *   bs_momentum - angular momentum 0=s, 1=p, etc.
+     *   bs_cc[i][j] - contraction coefs for element i
+     *   bs_exp[i][j]- orbital exponents for element i
+     */
     
     // get nshells
     rewind (fp);
@@ -617,16 +643,15 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
     bs_totnexp = 0;
     while (fgets (line, 1024, fp) != NULL)
     {
-        if (isalpha (line[0]))
+        if (isalpha (line[0])) // found element
         {
-            // a new atom
             sscanf (line, "%s", str);
             for (i = 0; i < basis->bs_nelements; i++)
             {
-                if (strcmp (str, etable[i]) == 0)
+                if (strcmp (str, etable[i]) == 0) // atomic number is i
                 {
-                    basis->bs_eptr[i] = natoms;
-                    basis->bs_eid[natoms] = i;
+                    basis->bs_eptr[i] = natoms; // map from atomic number to basis set entry index
+                    basis->bs_eid[natoms] = i;  // map from basis set entry to atomic number
                     break;
                 }
             }
@@ -635,7 +660,7 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
                 CINT_PRINTF (1, "atom %s in %s is not supported\n", str, file);
                 return CINT_STATUS_INVALID_VALUE;
             }
-            basis->bs_atom_start[natoms] = nshells;           
+            basis->bs_atom_start[natoms] = nshells; // pointer to where shells begin for this element
             natoms++;
             // read shells
             while (fgets (line, 1024, fp) != NULL)
@@ -651,16 +676,16 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
                         return CINT_STATUS_INVALID_VALUE;                        
                     }
                     mark = ftell (fp);
-                    for (i = 0; i < ns; i++)
+                    for (i = 0; i < ns; i++) // usually ns==1, but ns==2 for SP shells
                     {
                         basis->bs_nexp[nshells] = nexp;
-                        basis->bs_cc[nshells] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
-                        basis->bs_exp[nshells] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
+                        basis->bs_cc[nshells]   = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
+                        basis->bs_exp[nshells]  = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
                         basis->bs_norm[nshells] = (double *)ALIGNED_MALLOC (sizeof(double) * nexp);
-                        assert(basis->bs_cc[nshells] != NULL);
-                        assert(basis->bs_exp[nshells] != NULL);
+                        assert(basis->bs_cc[nshells]   != NULL);
+                        assert(basis->bs_exp[nshells]  != NULL);
                         assert(basis->bs_norm[nshells] != NULL);
-                        for (j = 0; j < SLEN; j++)
+                        for (j = 0; j < SLEN; j++) // match angular momentum symbol to index
                         {
                             if (str[i] == mtable[j])
                             {
@@ -684,6 +709,8 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
                                 CINT_PRINTF (1, "file %s has a wrong format\n", file);
                                 return CINT_STATUS_FILEIO_FAILED;
                             }
+                            // read contraction coefs into temporary array cc
+                            // and then store the element cc[i] corresponding to this shell
                             sscanf (line, "%lf %lf %lf %lf",
                                     &(basis->bs_exp[nshells][j]),
                                     &(cc[0]), &(cc[1]), &(cc[2]));
