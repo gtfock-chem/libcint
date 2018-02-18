@@ -100,7 +100,7 @@ CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {
     CINT_ASSERT(e != NULL);
     erd_max_scratch(basis, e);
 
-    // memory scratch memory
+    // allocate scratch memory for each thread
     e->nthreads = nthreads;
     e->buffer = (double **)malloc(nthreads * sizeof(double *));
     CINT_ASSERT(e->buffer != NULL);
@@ -134,6 +134,9 @@ CIntStatus_t CInt_destroyERD(ERD_t erd) {
     return CINT_STATUS_SUCCESS;
 }
 
+
+// shells use 0-based indexing;
+// threadid tid is used to specify per-thread buffer.
 
 CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
                                         int A, int B, int C, int D,
@@ -196,6 +199,9 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
     return CINT_STATUS_SUCCESS;
 }
 
+// compute multiple shell quartets using a loop;
+// this function might not be used in GTFock
+//
 CIntStatus_t CInt_computeShellQuartets(BasisSet_t basis,
                                        ERD_t erd,
                                        uint32_t threadId,

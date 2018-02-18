@@ -1,6 +1,8 @@
 CInt.h is the header that that should be included by external programs.
 External programs should not include any other headers.
 
+Input coordinates are in Angstroms.
+
 INTERFACE KLUDGES
 
 The second (comment) line in the xyz file contains the net charge
