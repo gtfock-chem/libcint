@@ -186,6 +186,27 @@ void CInt_getMaxMemory( ERD_t erd,
 #pragma offload_attribute(pop)
 #endif
 
+// Simint interface
+
+CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads);
+
+CIntStatus_t CInt_destroySIMINT(SIMINT_t simint);
+
+CIntStatus_t
+CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+                                int A, int B, int C, int D,
+                                double **integrals, int *nints);
+
+CIntStatus_t
+CInt_computePairOvl_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+                           int A, int B,
+                           double **integrals, int *nints);
+
+CIntStatus_t
+CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+                           int A, int B,
+                           double **integrals, int *nints);
+
 
 #ifdef __INTEL_OFFLOAD
 CIntStatus_t CInt_offload_createBasisSet( BasisSet_t *_basis );
