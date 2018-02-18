@@ -133,6 +133,7 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
                                 double **integrals, int *nints)
 {
+    int size, ret;
     struct simint_shell *shells = simint->shells;
 
     struct simint_multi_shellpair bra_pair;
@@ -145,20 +146,80 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
     simint_create_multi_shellpair(1, &shells[A], 1, &shells[B], &bra_pair, 0);
     simint_create_multi_shellpair(1, &shells[C], 1, &shells[D], &ket_pair, 0);
 
-    *nints =
-        simint_compute_eri(&bra_pair, &ket_pair, 0.0, 
-          &simint->workbuf[tid*simint->workmem_per_thread],
-          &simint->outbuf [tid*simint->outmem_per_thread]);
-    CINT_ASSERT(*nints == 1); // single shell quartet
-    *nints = (shells[A].am+1)*(shells[A].am+2)/2 *
-             (shells[B].am+1)*(shells[B].am+2)/2 *
-             (shells[C].am+1)*(shells[C].am+2)/2 *
-             (shells[D].am+1)*(shells[D].am+2)/2;
+    ret = simint_compute_eri(&bra_pair, &ket_pair, 0.0, 
+      &simint->workbuf[tid*simint->workmem_per_thread],
+      &simint->outbuf [tid*simint->outmem_per_thread]);
+    CINT_ASSERT(ret == 1); // single shell quartet
+    size = (shells[A].am+1)*(shells[A].am+2)/2 *
+           (shells[B].am+1)*(shells[B].am+2)/2 *
+           (shells[C].am+1)*(shells[C].am+2)/2 *
+           (shells[D].am+1)*(shells[D].am+2)/2;
 
     *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
+    *nints = size;
 
     simint_free_multi_shellpair(&bra_pair);
     simint_free_multi_shellpair(&ket_pair);
+
+    return CINT_STATUS_SUCCESS;
+}
+
+// interface has tid argument, different from OED version.
+CIntStatus_t
+CInt_computePairOvl_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+                           int A, int B,
+                           double **integrals, int *nints)
+{
+    int size, ret;
+    struct simint_shell *shells = simint->shells;
+
+    ret = simint_compute_overlap(&shells[A], &shells[B],
+       &simint->outbuf[tid*simint->outmem_per_thread]);
+    CINT_ASSERT(ret == 1);
+    size = (shells[A].am+1)*(shells[A].am+2)/2 *
+           (shells[B].am+1)*(shells[B].am+2)/2;
+
+    *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
+    *nints = size;
+
+    return CINT_STATUS_SUCCESS;
+}
+
+// interface has tid argument, different from OED version.
+CIntStatus_t
+CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+                           int A, int B,
+                           double **integrals, int *nints)
+{
+    int size, ret;
+    struct simint_shell *shells = simint->shells;
+
+    // number of scalar quantities computed
+    size = (shells[A].am+1)*(shells[A].am+2)/2 *
+           (shells[B].am+1)*(shells[B].am+2)/2;
+
+    // allocate temporary buffer
+    double *temp = (double *) malloc(size*sizeof(double));
+    CINT_ASSERT(temp != NULL);
+
+    ret = simint_compute_ke(&shells[A], &shells[B], temp);
+    CINT_ASSERT(ret == 1);
+
+    ret = simint_compute_potential(basis->natoms, basis->charge,
+       basis->xn, basis->yn, basis->zn,
+       &shells[A], &shells[B],
+       &simint->outbuf[tid*simint->outmem_per_thread]);
+    CINT_ASSERT(ret == 1);
+
+    *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
+    *nints = size;
+
+    // sum outputs
+    double *p = *integrals;
+    for (int i=0; i<size; i++)
+        *p++ += temp[i];
+
+    free(temp);
 
     return CINT_STATUS_SUCCESS;
 }

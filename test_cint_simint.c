@@ -16,12 +16,10 @@ int main (int argc, char **argv)
 
     int nshells;
     int natoms;
-    int nfunctions;
 
     CInt_loadBasisSet(basis, argv[1], argv[2]);
     nshells = CInt_getNumShells(basis);
     natoms = CInt_getNumAtoms(basis);
-    nfunctions = CInt_getNumFuncs(basis);
     printf("Job information:\n");
     char *fname;
     fname = basename(argv[2]);
@@ -31,7 +29,6 @@ int main (int argc, char **argv)
     printf("  charge     = %d\n", CInt_getTotalCharge(basis));
     printf("  #atoms     = %d\n", natoms);
     printf("  #shells    = %d\n", nshells);
-    printf("  #functions = %d\n", nfunctions);
     int nthreads = omp_get_max_threads();
     printf("  #nthreads_cpu = %d\n", nthreads);
 
@@ -43,8 +40,8 @@ int main (int argc, char **argv)
     double *integrals;
     int nints;
 
-    for (int i=0; i<nshells; i++)
-    for (int j=0; j<nshells; j++)
+    for (int i=0; i<1; i++)
+    for (int j=0; j<1; j++)
     for (int k=0; k<1; k++)
     for (int l=0; l<1; l++)
     {
@@ -52,10 +49,19 @@ int main (int argc, char **argv)
         //    i, j, k, l, &integrals, &nints);
         CInt_computeShellQuartet_SIMINT(basis, simint, /*tid*/0,
             i, j, k, l, &integrals, &nints);
-        printf("%d %d %d %d num integrals computed = %d\n", i, j, k, l, nints);
+        printf("%d %d %d %d num 2e integrals computed = %d\n", i, j, k, l, nints);
     }
     // integrals cannot be compared because simint uses cartesian functions
     // and ERD uses spheric functions
+
+    // test one electron functions
+    for (int i=0; i<nshells; i++)
+    for (int j=0; j<nshells; j++)
+    {
+        CInt_computePairOvl_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
+        CInt_computePairCoreH_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
+        printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
+    }
 
     CInt_destroyERD(erd);
     CInt_destroySIMINT(simint);
