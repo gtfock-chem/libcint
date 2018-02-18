@@ -7,11 +7,13 @@
 
 struct ERD;
 struct OED;
+struct SIMINT;
 struct BasisSet;
 
 
 typedef struct OED *OED_t;
 typedef struct ERD *ERD_t;
+typedef struct SIMINT *SIMINT_t;
 typedef struct BasisSet *BasisSet_t;
 
 

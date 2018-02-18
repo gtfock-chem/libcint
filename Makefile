@@ -11,7 +11,7 @@ FC  = ftn
 
 AR  = xiar rcs
 
-INC=-I.
+INC=-I. -I/global/homes/e/echow/simint-generator/outdir-enuc/build-avx2/install/include
 
 OPTFLAGS = -m64 -qno-offload
 
