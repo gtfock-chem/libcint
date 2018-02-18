@@ -33,10 +33,18 @@ struct SIMINT
     int nthreads;
     int max_am;
     int workmem_per_thread;
-    double *workspace;
+    int outmem_per_thread;
+    double *workbuf;
+    double *outbuf;
 
     struct simint_shell *shells;
 };
+
+// WARNING: when basis set is read, cartesian/spheric is set,
+// but we must use cartesian if using Simint
+//
+// WARNING 2: normalization should be done after choosing which
+// integral library to use
 
 // CInt_createSIMINT is called by all nodes.
 // All nodes have a copy of the BasisSet_t structure here and will form and 
@@ -51,11 +59,23 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
     simint_init();
 
-    // allocate workspace for all threads on this node
+    // allocate workbuf for all threads on this node
     s->nthreads = nthreads;
     s->max_am = basis->max_momentum;
-    s->workmem_per_thread = simint_ostei_workmem(0, s->max_am);
-    s->workspace = (double *) malloc(s->workmem_per_thread*nthreads*sizeof(double));
+    s->workmem_per_thread = simint_ostei_workmem(0, s->max_am); // consider aligning
+    s->workbuf = (double *) malloc(s->workmem_per_thread*nthreads*sizeof(double));
+    CINT_ASSERT(s->workbuf != NULL);
+
+    // allocate outbuf for all threads on this node
+    int max_ncart = ( (s->max_am+1)*(s->max_am+2) )/2;
+    int maxsize = max_ncart * max_ncart * max_ncart * max_ncart; // consider aligning
+    s->outmem_per_thread = maxsize;
+    s->outbuf = (double *) malloc(maxsize*nthreads*sizeof(double));
+    CINT_ASSERT(s->outbuf != NULL);
+
+    printf("cint_simint: max_am: %d\n", s->max_am);
+    printf("cint_simint: workmem_per_thread: %d\n", s->workmem_per_thread);
+    printf("cint_simint: outmem_per_thread: %d\n", s->outmem_per_thread);
 
     // form and store simint shells for all shells of this molecule
     s->shells = (struct simint_shell *) malloc(sizeof(struct simint_shell)*basis->nshells);
@@ -77,8 +97,8 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
         shell_p->y     = basis->xyz0[i*4+1];
         shell_p->z     = basis->xyz0[i*4+2];
 
-        shell_p->alpha = basis->bs_exp[i];
-        shell_p->coef  = basis->bs_cc[i];
+        shell_p->alpha = basis->exp[i];
+        shell_p->coef  = basis->cc[i];
 
         // UNDONE: have the shells already been normalized?
         // we should use simint normalization....
@@ -96,7 +116,8 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 {
-    free(simint->workspace);
+    free(simint->workbuf);
+    free(simint->outbuf);
     free(simint->shells);
     free(simint);
 
@@ -104,6 +125,9 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
     return CINT_STATUS_SUCCESS;
 }
 
+// for Simint, caller provides memory where integrals will be stored;
+// for ERD, library returns pointer to where integrals are stored;
+// it is not clear if Simint could save a copy operation
 CIntStatus_t 
 CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
@@ -111,7 +135,6 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 {
     struct simint_shell *shells = simint->shells;
 
-    // multishell pairs
     struct simint_multi_shellpair bra_pair;
     struct simint_multi_shellpair ket_pair;
 
@@ -122,16 +145,20 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
     simint_create_multi_shellpair(1, &shells[A], 1, &shells[B], &bra_pair, 0);
     simint_create_multi_shellpair(1, &shells[C], 1, &shells[D], &ket_pair, 0);
 
-    // set workspace pointer
-    // set targets...
-
     *nints =
         simint_compute_eri(&bra_pair, &ket_pair, 0.0, 
-          &simint->workspace[tid*simint->workmem_per_thread], *integrals);
+          &simint->workbuf[tid*simint->workmem_per_thread],
+          &simint->outbuf [tid*simint->outmem_per_thread]);
+    CINT_ASSERT(*nints == 1); // single shell quartet
+    *nints = (shells[A].am+1)*(shells[A].am+2)/2 *
+             (shells[B].am+1)*(shells[B].am+2)/2 *
+             (shells[C].am+1)*(shells[C].am+2)/2 *
+             (shells[D].am+1)*(shells[D].am+2)/2;
+
+    *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
 
     simint_free_multi_shellpair(&bra_pair);
     simint_free_multi_shellpair(&ket_pair);
 
-    *nints = 1; // UNDONE: meaning of return value is in shell quartets?
     return CINT_STATUS_SUCCESS;
 }
