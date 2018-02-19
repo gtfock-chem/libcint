@@ -73,10 +73,6 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     s->outbuf = (double *) malloc(maxsize*nthreads*sizeof(double));
     CINT_ASSERT(s->outbuf != NULL);
 
-    printf("cint_simint: max_am: %d\n", s->max_am);
-    printf("cint_simint: workmem_per_thread: %d\n", s->workmem_per_thread);
-    printf("cint_simint: outmem_per_thread: %d\n", s->outmem_per_thread);
-
     // form and store simint shells for all shells of this molecule
     s->shells = (struct simint_shell *) malloc(sizeof(struct simint_shell)*basis->nshells);
     CINT_ASSERT(s->shells != NULL);
