@@ -83,6 +83,16 @@ static void normalization (BasisSet_t basis)
     double power;
     int shell;
 
+    if (basis->basistype == SPHERICAL)
+    {
+        CINT_PRINTF (1, "Warning: performing normalization for SPHERICAL\n");
+    }
+    else
+    {
+        CINT_PRINTF (1, "Warning: NOT performing normalization for CARTESIAN\n");
+        return;
+    }
+
     for (i = 0; i < basis->bs_nshells; i++)
     {
         sum = 0.0;
@@ -584,11 +594,18 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
     sscanf (line, "%s", str);
     if (strcmp (str, "cartesian") == 0)
     {
+        CINT_PRINTF (1, "Warning: found CARTESIAN basis type in gbs file... assuming Simint\n");
         basis->basistype = CARTESIAN;
     }
     else if (strcmp (str, "spherical") == 0)
     {
+        CINT_PRINTF (1, "Warning: found SPHERICAL basis type in gbs file... assuming OptErD\n");
         basis->basistype = SPHERICAL;
+    }
+    else
+    {
+        CINT_PRINTF (1, "Warning: no valid basis type in gbs file... assuming Simint\n");
+        basis->basistype = CARTESIAN;
     }
 
     // get number of atoms (elements in the basis set)
@@ -836,6 +853,10 @@ end:
         if (flag == 1) {
             memset(basis->guess[i], 0,
                 sizeof(double) * nfunctions * nfunctions);          
+        }
+        else
+        {
+            CINT_PRINTF (1, "Using SAD file for %s\n", etable[eid]);
         }
     }
     

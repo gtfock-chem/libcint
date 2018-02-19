@@ -8,6 +8,13 @@
 #include "CInt.h"
 #include "simint/simint.h"
 
+void printvec(int a, int b, int nints, double *integrals)
+{
+    printf("shell pair %3d %3d\n", a, b);
+    for (int i=0; i<nints; i++)
+        printf("%3d    %e\n", i, integrals[i]);
+}
+
 int main (int argc, char **argv)
 {
     // create basis set    
@@ -59,8 +66,10 @@ int main (int argc, char **argv)
     for (int j=0; j<nshells; j++)
     {
         CInt_computePairOvl_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
+
         CInt_computePairCoreH_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
-        printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
+        printvec(i, j, nints, integrals);
+        //printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
     }
 
     CInt_destroyERD(erd);
