@@ -22,10 +22,9 @@
 #include <math.h>
 
 #include <simint/simint.h>
-//#include <CInt.h>
-//#include <cint_type.h>    // BasisSet definition
+#include <CInt.h>
 #include <cint_basisset.h>
-#include <cint_config.h>  // CINT_PRINTF,...
+#include <cint_config.h>
 #include <cint_def.h>
 
 struct SIMINT
@@ -37,14 +36,9 @@ struct SIMINT
     double *workbuf;
     double *outbuf;
 
+    int nshells;
     struct simint_shell *shells;
 };
-
-// WARNING: when basis set is read, cartesian/spheric is set,
-// but we must use cartesian if using Simint
-//
-// WARNING 2: normalization should be done after choosing which
-// integral library to use
 
 // CInt_createSIMINT is called by all nodes.
 // All nodes have a copy of the BasisSet_t structure here and will form and 
@@ -74,6 +68,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     CINT_ASSERT(s->outbuf != NULL);
 
     // form and store simint shells for all shells of this molecule
+    s->nshells = basis->nshells;
     s->shells = (struct simint_shell *) malloc(sizeof(struct simint_shell)*basis->nshells);
     CINT_ASSERT(s->shells != NULL);
 
@@ -83,9 +78,8 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
         // initialize variables in structure
         simint_initialize_shell(shell_p); 
 
-        // do not allocate space for alpha and coef for the shell;
-        // we will set the pointers to existing data;
-        // simint_allocate_shell(nprim, shell_p);
+        // allocate space for alpha and coef for the shell
+        simint_allocate_shell(basis->nexp[i], shell_p);
 
         shell_p->am    = basis->momentum[i];
         shell_p->nprim = basis->nexp[i];
@@ -93,12 +87,11 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
         shell_p->y     = basis->xyz0[i*4+1];
         shell_p->z     = basis->xyz0[i*4+2];
 
-        shell_p->alpha = basis->exp[i];
-        shell_p->coef  = basis->cc[i];
-
-        // UNDONE: have the shells already been normalized?
-        // we should use simint normalization....
-        // so we need to make sure shells are not normalized beforehand
+        for (int j=0; j<basis->nexp[i]; j++)
+        {
+            shell_p->alpha[j] = basis->exp[i][j];
+            shell_p->coef[j]  = basis->cc[i][j];
+        }
 
         shell_p++;
     }
@@ -112,6 +105,10 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 {
+    struct simint_shell *shell_p = simint->shells;
+    for (int i=0; i<simint->nshells; i++)
+        simint_free_shell(shell_p++);
+
     free(simint->workbuf);
     free(simint->outbuf);
     free(simint->shells);

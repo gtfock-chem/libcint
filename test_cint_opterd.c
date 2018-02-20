@@ -1,9 +1,11 @@
 #include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
+//#include <unistd.h>
 #include <libgen.h>
 #include <omp.h>
 
 #include "CInt.h"
-#include "simint/simint.h"
 
 void printvec(int a, int b, int nints, double *integrals)
 {
@@ -43,8 +45,8 @@ int main (int argc, char **argv)
     int nthreads = omp_get_max_threads();
     printf("  #nthreads_cpu = %d\n", nthreads);
 
-    SIMINT_t simint;
-    CInt_createSIMINT(basis, &simint, nthreads);
+    ERD_t erd;
+    CInt_createERD(basis, &erd, nthreads);
 
     double *integrals;
     int nints;
@@ -54,21 +56,30 @@ int main (int argc, char **argv)
     for (int k=0; k<nshells; k++)
     for (int l=0; l<nshells; l++)
     {
-        CInt_computeShellQuartet_SIMINT(basis, simint, /*tid*/0,
+        CInt_computeShellQuartet(basis, erd, /*tid*/0,
             i, j, k, l, &integrals, &nints);
         printvec4(i, j, k, l, nints, integrals);
     }
 
+    OED_t *oed = (OED_t *)malloc(sizeof(OED_t) * nthreads);
+    for (int i=0; i<nthreads; i++)
+        CInt_createOED(basis, &(oed[i]));
+
     // test one electron functions
+    // OptERD may return nints=0, i.e., values are screened
     for (int i=0; i<nshells; i++)
     for (int j=0; j<nshells; j++)
     {
-        CInt_computePairOvl_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
+        CInt_computePairOvl(basis, oed[0], i, j, &integrals, &nints);
         printvec(i, j, nints, integrals);
 
-        CInt_computePairCoreH_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
+        CInt_computePairCoreH(basis, oed[0], i, j, &integrals, &nints);
         //printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
     }
 
-    CInt_destroySIMINT(simint);
+    for (int i=0; i<nthreads; i++)
+        CInt_destroyOED(oed[i]);
+    free(oed);
+
+    CInt_destroyERD(erd);
 }
