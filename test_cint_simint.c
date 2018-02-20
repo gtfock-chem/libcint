@@ -5,18 +5,26 @@
 #include "CInt.h"
 #include "simint/simint.h"
 
-void printvec(int a, int b, int nints, double *integrals)
+#define ABS(x) ((x)<0 ? -(x):(x))
+void printvec(int nints, double *integrals)
 {
-    printf("shell pair %3d %3d\n", a, b);
     for (int i=0; i<nints; i++)
-        printf("%3d    %e\n", i, integrals[i]);
+    {
+        double temp = integrals[i];
+        if (ABS(temp) < 1e-15)
+            temp = 0.;
+        printf("%3d    %e\n", i, temp);
+    }
 }
 
-void printvec4(int a, int b, int c, int d, int nints, double *integrals)
+// permute 4-index array
+void permute(int n1, int n2, int n3, int n4, const double *a, double *b)
 {
-    printf("shell quartet %3d %3d %3d %3d\n", a, b, c, d);
-    for (int i=0; i<nints; i++)
-        printf("%3d    %e\n", i, integrals[i]);
+    for (int i=0; i<n1; i++)
+    for (int j=0; j<n2; j++)
+    for (int k=0; k<n3; k++)
+    for (int l=0; l<n4; l++)
+        b[n1*n2*n3*l + n1*n2*k + n1*j + i] = a[n4*n3*n2*i + n4*n3*j + n4*k + l];
 }
 
 int main (int argc, char **argv)
@@ -27,10 +35,12 @@ int main (int argc, char **argv)
 
     int nshells;
     int natoms;
+    int maxdim;
 
     CInt_loadBasisSet(basis, argv[1], argv[2]);
     nshells = CInt_getNumShells(basis);
     natoms = CInt_getNumAtoms(basis);
+    maxdim = CInt_getMaxShellDim(basis);
     printf("Job information:\n");
     char *fname;
     fname = basename(argv[2]);
@@ -42,13 +52,16 @@ int main (int argc, char **argv)
     printf("  #shells    = %d\n", nshells);
     int nthreads = omp_get_max_threads();
     printf("  #nthreads_cpu = %d\n", nthreads);
+    printf("  max dim = %d\n", maxdim);
 
     SIMINT_t simint;
     CInt_createSIMINT(basis, &simint, nthreads);
 
+    double buffer[maxdim*maxdim*maxdim*maxdim];
     double *integrals;
     int nints;
 
+    // test two electron integrals
     for (int i=0; i<nshells; i++)
     for (int j=0; j<nshells; j++)
     for (int k=0; k<nshells; k++)
@@ -56,15 +69,23 @@ int main (int argc, char **argv)
     {
         CInt_computeShellQuartet_SIMINT(basis, simint, /*tid*/0,
             i, j, k, l, &integrals, &nints);
-        printvec4(i, j, k, l, nints, integrals);
+        permute(CInt_getShellDim(basis, i),
+                CInt_getShellDim(basis, j),
+                CInt_getShellDim(basis, k),
+                CInt_getShellDim(basis, l), integrals, buffer);
+        printf("shell quartet %3d %3d %3d %3d\n", i, j, k, l);
+        printvec(nints, buffer);
     }
 
-    // test one electron functions
+    // test one electron integrals
     for (int i=0; i<nshells; i++)
     for (int j=0; j<nshells; j++)
     {
         CInt_computePairOvl_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
-        printvec(i, j, nints, integrals);
+        permute(CInt_getShellDim(basis, i),
+                CInt_getShellDim(basis, j), 1, 1, integrals, buffer);
+        printf("shell pair %3d %3d\n", i, j);
+        printvec(nints, buffer);
 
         CInt_computePairCoreH_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
         //printf("%d %d num 1e integrals computed = %d\n", i, j, nints);

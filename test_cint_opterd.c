@@ -1,24 +1,19 @@
 #include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <unistd.h>
 #include <libgen.h>
 #include <omp.h>
 
 #include "CInt.h"
 
-void printvec(int a, int b, int nints, double *integrals)
+#define ABS(x) ((x)<0 ? -(x):(x))
+void printvec(int nints, double *integrals)
 {
-    printf("shell pair %3d %3d\n", a, b);
     for (int i=0; i<nints; i++)
-        printf("%3d    %e\n", i, integrals[i]);
-}
-
-void printvec4(int a, int b, int c, int d, int nints, double *integrals)
-{
-    printf("shell quartet %3d %3d %3d %3d\n", a, b, c, d);
-    for (int i=0; i<nints; i++)
-        printf("%3d    %e\n", i, integrals[i]);
+    {
+        double temp = integrals[i];
+        if (ABS(temp) < 1e-15)
+            temp = 0.;
+        printf("%3d    %e\n", i, temp);
+    }
 }
 
 int main (int argc, char **argv)
@@ -51,6 +46,7 @@ int main (int argc, char **argv)
     double *integrals;
     int nints;
 
+    // test two electron integrals
     for (int i=0; i<nshells; i++)
     for (int j=0; j<nshells; j++)
     for (int k=0; k<nshells; k++)
@@ -58,20 +54,22 @@ int main (int argc, char **argv)
     {
         CInt_computeShellQuartet(basis, erd, /*tid*/0,
             i, j, k, l, &integrals, &nints);
-        printvec4(i, j, k, l, nints, integrals);
+        printf("shell quartet %3d %3d %3d %3d\n", i, j, k, l);
+        printvec(nints, integrals);
     }
 
     OED_t *oed = (OED_t *)malloc(sizeof(OED_t) * nthreads);
     for (int i=0; i<nthreads; i++)
         CInt_createOED(basis, &(oed[i]));
 
-    // test one electron functions
+    // test one electron integrals
     // OptERD may return nints=0, i.e., values are screened
     for (int i=0; i<nshells; i++)
     for (int j=0; j<nshells; j++)
     {
         CInt_computePairOvl(basis, oed[0], i, j, &integrals, &nints);
-        printvec(i, j, nints, integrals);
+        printf("shell pair %3d %3d\n", i, j);
+        printvec(nints, integrals);
 
         CInt_computePairCoreH(basis, oed[0], i, j, &integrals, &nints);
         //printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
