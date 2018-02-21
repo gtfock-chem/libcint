@@ -68,11 +68,10 @@ int main (int argc, char **argv)
     for (int j=0; j<nshells; j++)
     {
         CInt_computePairOvl(basis, oed[0], i, j, &integrals, &nints);
-        printf("shell pair %3d %3d\n", i, j);
-        printvec(nints, integrals);
 
         CInt_computePairCoreH(basis, oed[0], i, j, &integrals, &nints);
-        //printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
+        printf("shell pair %3d %3d\n", i, j);
+        printvec(nints, integrals);
     }
 
     for (int i=0; i<nthreads; i++)

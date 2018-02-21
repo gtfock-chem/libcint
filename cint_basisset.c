@@ -776,9 +776,6 @@ CIntStatus_t import_basis (char *file, BasisSet_t basis)
  * If a guess file for an element is not found, or an inappropriate file is
  * found (e.g., does not match number of functions because it is for a 
  * different basis set), then a zero initial guess for that atom is used.
- *
- * Warning: no indication is given on whether initial guesses were successfully
- * read.
  */
 CIntStatus_t import_guess(char *file, BasisSet_t basis)
 {
@@ -829,8 +826,10 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
         FILE *fp = fopen(fname, "r");
         int flag = 0;
         if (fp != NULL) {
+            CINT_PRINTF (1, "Found SAD file for %s\n", etable[eid]);
             for (int j = 0; j < nfunctions * nfunctions; j++) {
                 if (fgets (line, 1024, fp) == NULL) {
+                    CINT_PRINTF (1, "Bad SAD file\n");
                     flag = 1;
                     goto end;
                 }
@@ -841,6 +840,7 @@ CIntStatus_t import_guess(char *file, BasisSet_t basis)
                 for (int k = 0; k < nfunctions; k++) {
                     if (basis->guess[i][j * nfunctions + k] -
                         basis->guess[i][k * nfunctions + j] > 1e-12) {
+                        CINT_PRINTF (1, "Bad SAD matrix: not symmetric\n");
                         flag = 1;
                         goto end;
                     }

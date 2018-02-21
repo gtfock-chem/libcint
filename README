@@ -10,11 +10,14 @@ of the system.
 
 The first line of the basis set file (gbs file) contains "spherical"
 or "cartesian" to indicate the basis set type.
+If no type is found, then cartesian is assumed.
 
 The SCF initial guess for the density matrix is constructed from
 the superposition of atomic densities (SAD).  The densities for 
-a few atoms are read automatically, but assumes you are using
-cc-pvdz.
+a few atoms are read automatically from the directory containing
+the basis set file.  These files are assumed be compatible with
+the basis set being used.
 
-The SAD initial guess also assumes using a spherical basis.
+OptErd appears hard-coded to use spherical functions.
 
+In OptErd, primitive screening is hard-coded to True.

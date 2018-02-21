@@ -82,13 +82,12 @@ int main (int argc, char **argv)
     for (int j=0; j<nshells; j++)
     {
         CInt_computePairOvl_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
+
+        CInt_computePairCoreH_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
         permute(CInt_getShellDim(basis, i),
                 CInt_getShellDim(basis, j), 1, 1, integrals, buffer);
         printf("shell pair %3d %3d\n", i, j);
         printvec(nints, buffer);
-
-        CInt_computePairCoreH_SIMINT(basis, simint, /*tid*/ 0, i, j, &integrals, &nints);
-        //printf("%d %d num 1e integrals computed = %d\n", i, j, nints);
     }
 
     CInt_destroySIMINT(simint);
