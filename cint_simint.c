@@ -27,6 +27,13 @@
 #include <cint_config.h>
 #include <cint_def.h>
 
+typedef unsigned long long TimerType;
+#define CLOCK(ticks) do { \
+    volatile unsigned int a__, d__; \
+    __asm__ __volatile__("rdtsc" : "=a" (a__), "=d" (d__) : );   \
+    (ticks) = ((TimerType) a__)|(((TimerType)d__)<<32); \
+  } while(0)
+
 struct SIMINT
 {
     int nthreads;
@@ -38,6 +45,10 @@ struct SIMINT
 
     int nshells;
     struct simint_shell *shells;
+
+    // only master thread will write to these
+    TimerType time_outer;
+    TimerType time_inner;
 };
 
 // CInt_createSIMINT is called by all nodes.
@@ -99,12 +110,18 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     // here we assume there are no unit shells (shells with zero orbital exponent)
     simint_normalize_shells(basis->nshells, s->shells);
 
+    s->time_outer = 0;
+    s->time_inner = 0;
+
     *simint = s;
     return CINT_STATUS_SUCCESS;
 }
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 {
+    printf("Time outer: %f\n", simint->time_outer/2.3e9);
+    printf("Time inner: %f\n", simint->time_inner/2.3e9);
+
     struct simint_shell *shell_p = simint->shells;
     for (int i=0; i<simint->nshells; i++)
         simint_free_shell(shell_p++);
@@ -120,39 +137,59 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 
 // for Simint, caller provides memory where integrals will be stored;
 // for ERD, library returns pointer to where integrals are stored;
-// it is not clear if Simint could save a copy operation
+
 CIntStatus_t 
 CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
                                 double **integrals, int *nints)
 {
+    TimerType start0, stop0;
+    TimerType start1, stop1;
+
     int size, ret;
     struct simint_shell *shells = simint->shells;
 
     struct simint_multi_shellpair bra_pair;
     struct simint_multi_shellpair ket_pair;
 
+    if (tid==0) CLOCK(start0);
+
     simint_initialize_multi_shellpair(&bra_pair);
     simint_initialize_multi_shellpair(&ket_pair);
 
-    // final argument is screen_method
-    simint_create_multi_shellpair(1, &shells[A], 1, &shells[B], &bra_pair, 0);
-    simint_create_multi_shellpair(1, &shells[C], 1, &shells[D], &ket_pair, 0);
+//#define CINT_SIMINT_SCREEN SIMINT_SCREEN_SCHWARZ
+#define CINT_SIMINT_SCREEN 0
+    simint_create_multi_shellpair(1, &shells[A], 1, &shells[B], &bra_pair, CINT_SIMINT_SCREEN);
+    simint_create_multi_shellpair(1, &shells[C], 1, &shells[D], &ket_pair, CINT_SIMINT_SCREEN);
 
-    ret = simint_compute_eri(&bra_pair, &ket_pair, 0.0, 
+    if (tid==0) CLOCK(start1);
+    ret = simint_compute_eri(&bra_pair, &ket_pair, 0.0 /*1.e-10*/,
       &simint->workbuf[tid*simint->workmem_per_thread],
       &simint->outbuf [tid*simint->outmem_per_thread]);
-    CINT_ASSERT(ret == 1); // single shell quartet
-    size = (shells[A].am+1)*(shells[A].am+2)/2 *
-           (shells[B].am+1)*(shells[B].am+2)/2 *
-           (shells[C].am+1)*(shells[C].am+2)/2 *
-           (shells[D].am+1)*(shells[D].am+2)/2;
+    if (tid==0) CLOCK(stop1);
+    if (ret < 0)
+        size = 0; // return zero size to caller; output buffer is not initialized
+    else
+    {
+        CINT_ASSERT(ret == 1); // single shell quartet
+        size = (shells[A].am+1)*(shells[A].am+2)/2 *
+               (shells[B].am+1)*(shells[B].am+2)/2 *
+               (shells[C].am+1)*(shells[C].am+2)/2 *
+               (shells[D].am+1)*(shells[D].am+2)/2;
+    }
 
     *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
     *nints = size;
 
     simint_free_multi_shellpair(&bra_pair);
     simint_free_multi_shellpair(&ket_pair);
+
+    if (tid==0) CLOCK(stop0);
+    if (tid==0)
+    {
+        simint->time_outer += (stop0-start0);
+        simint->time_inner += (stop1-start1);
+    }
 
     return CINT_STATUS_SUCCESS;
 }
