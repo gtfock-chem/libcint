@@ -45,6 +45,7 @@ struct SIMINT
 
     int nshells;
     struct simint_shell *shells;
+    struct simint_multi_shellpair *shellpairs;
 
     // only master thread will write to these
     TimerType time_outer;
@@ -110,6 +111,25 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     // here we assume there are no unit shells (shells with zero orbital exponent)
     simint_normalize_shells(basis->nshells, s->shells);
 
+    // precompute all shell pairs
+    // could just do this as needed
+    s->shellpairs = (struct simint_multi_shellpair *)
+        malloc(sizeof(struct simint_multi_shellpair)*basis->nshells*basis->nshells);
+    CINT_ASSERT(s->shellpairs != NULL);
+    // UNDONE: exploit symmetry
+    for (int i=0; i<basis->nshells; i++)
+    {
+        for (int j=0; j<basis->nshells; j++)
+        {
+            struct simint_multi_shellpair *pair;
+            pair = &s->shellpairs[i*basis->nshells+j];
+            simint_initialize_multi_shellpair(pair);
+//#define CINT_SIMINT_SCREEN SIMINT_SCREEN_SCHWARZ
+#define CINT_SIMINT_SCREEN 0
+            simint_create_multi_shellpair(1, s->shells+i, 1, s->shells+j, pair, 0);
+        }
+    }
+
     s->time_outer = 0;
     s->time_inner = 0;
 
@@ -122,13 +142,18 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
     printf("Time outer: %f\n", simint->time_outer/2.3e9);
     printf("Time inner: %f\n", simint->time_inner/2.3e9);
 
+    struct simint_multi_shellpair *shellpair_p = simint->shellpairs;
+    for (int i=0; i<simint->nshells*simint->nshells; i++)
+        simint_free_multi_shellpair(shellpair_p++);
+
     struct simint_shell *shell_p = simint->shells;
     for (int i=0; i<simint->nshells; i++)
         simint_free_shell(shell_p++);
 
+    free(simint->shellpairs);
+    free(simint->shells);
     free(simint->workbuf);
     free(simint->outbuf);
-    free(simint->shells);
     free(simint);
 
     simint_finalize();
@@ -147,23 +172,16 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
     TimerType start1, stop1;
 
     int size, ret;
-    struct simint_shell *shells = simint->shells;
-
-    struct simint_multi_shellpair bra_pair;
-    struct simint_multi_shellpair ket_pair;
+    struct simint_multi_shellpair *bra_pair_p;
+    struct simint_multi_shellpair *ket_pair_p;
 
     if (tid==0) CLOCK(start0);
 
-    simint_initialize_multi_shellpair(&bra_pair);
-    simint_initialize_multi_shellpair(&ket_pair);
-
-//#define CINT_SIMINT_SCREEN SIMINT_SCREEN_SCHWARZ
-#define CINT_SIMINT_SCREEN 0
-    simint_create_multi_shellpair(1, &shells[A], 1, &shells[B], &bra_pair, CINT_SIMINT_SCREEN);
-    simint_create_multi_shellpair(1, &shells[C], 1, &shells[D], &ket_pair, CINT_SIMINT_SCREEN);
+    bra_pair_p = &simint->shellpairs[A*basis->nshells+B];
+    ket_pair_p = &simint->shellpairs[C*basis->nshells+D];
 
     if (tid==0) CLOCK(start1);
-    ret = simint_compute_eri(&bra_pair, &ket_pair, 0.0 /*1.e-10*/,
+    ret = simint_compute_eri(bra_pair_p, ket_pair_p, 0.0 /*1.e-10*/,
       &simint->workbuf[tid*simint->workmem_per_thread],
       &simint->outbuf [tid*simint->outmem_per_thread]);
     if (tid==0) CLOCK(stop1);
@@ -172,6 +190,7 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
     else
     {
         CINT_ASSERT(ret == 1); // single shell quartet
+        struct simint_shell *shells = simint->shells;
         size = (shells[A].am+1)*(shells[A].am+2)/2 *
                (shells[B].am+1)*(shells[B].am+2)/2 *
                (shells[C].am+1)*(shells[C].am+2)/2 *
@@ -180,9 +199,6 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 
     *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
     *nints = size;
-
-    simint_free_multi_shellpair(&bra_pair);
-    simint_free_multi_shellpair(&ket_pair);
 
     if (tid==0) CLOCK(stop0);
     if (tid==0)
