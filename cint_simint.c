@@ -47,6 +47,9 @@ struct SIMINT
     struct simint_shell *shells;
     struct simint_multi_shellpair *shellpairs;
 
+    int    screen_method;
+    double screen_tol;
+
     // only master thread will write to these
     TimerType time_outer;
     TimerType time_inner;
@@ -111,6 +114,11 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     // here we assume there are no unit shells (shells with zero orbital exponent)
     simint_normalize_shells(basis->nshells, s->shells);
 
+    s->screen_method = SIMINT_SCREEN_FASTSCHWARZ;
+    s->screen_tol = 1.e-14;
+    printf("Screen method: %d\n", s->screen_method);
+    printf("Screen tol:    %e\n", s->screen_tol);
+
     // precompute all shell pairs
     // could just do this as needed
     s->shellpairs = (struct simint_multi_shellpair *)
@@ -124,9 +132,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
             struct simint_multi_shellpair *pair;
             pair = &s->shellpairs[i*basis->nshells+j];
             simint_initialize_multi_shellpair(pair);
-//#define CINT_SIMINT_SCREEN SIMINT_SCREEN_SCHWARZ
-#define CINT_SIMINT_SCREEN 0
-            simint_create_multi_shellpair(1, s->shells+i, 1, s->shells+j, pair, 0);
+            simint_create_multi_shellpair(1, s->shells+i, 1, s->shells+j, pair, s->screen_method);
         }
     }
 
@@ -181,7 +187,7 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
     ket_pair_p = &simint->shellpairs[C*basis->nshells+D];
 
     if (tid==0) CLOCK(start1);
-    ret = simint_compute_eri(bra_pair_p, ket_pair_p, 0.0 /*1.e-10*/,
+    ret = simint_compute_eri(bra_pair_p, ket_pair_p, simint->screen_tol,
       &simint->workbuf[tid*simint->workmem_per_thread],
       &simint->outbuf [tid*simint->outmem_per_thread]);
     if (tid==0) CLOCK(stop1);
