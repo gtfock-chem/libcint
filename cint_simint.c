@@ -169,6 +169,12 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 // for Simint, caller provides memory where integrals will be stored;
 // for ERD, library returns pointer to where integrals are stored;
 
+int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q)
+{
+	struct simint_shell *shells = simint->shells;
+	return shells[P].am * 8 + shells[Q].am;
+}
+
 CIntStatus_t 
 CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,

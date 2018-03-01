@@ -192,6 +192,8 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint);
 
+int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
+
 CIntStatus_t
 CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
