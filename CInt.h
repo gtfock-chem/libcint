@@ -192,6 +192,9 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint);
 
+#define _SIMINT_OSTEI_MAXAM 7
+#define _SIMINT_NSHELL_SIMD 16
+#define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
 int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
 
 CIntStatus_t

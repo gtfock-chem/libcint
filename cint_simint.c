@@ -171,8 +171,8 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 
 int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q)
 {
-	struct simint_shell *shells = simint->shells;
-	return shells[P].am * 8 + shells[Q].am;
+    struct simint_shell *shells = simint->shells;
+    return shells[P].am * ((_SIMINT_OSTEI_MAXAM) + 1) + shells[Q].am;
 }
 
 CIntStatus_t 
