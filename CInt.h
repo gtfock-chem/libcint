@@ -192,11 +192,6 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint);
 
-#define _SIMINT_OSTEI_MAXAM 7
-#define _SIMINT_NSHELL_SIMD 16
-#define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
-int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
-
 CIntStatus_t
 CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
@@ -212,6 +207,24 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                            int A, int B,
                            double **integrals, int *nints);
 
+/* ---------- huangh223 modification part start ---------- */
+
+#define _SIMINT_OSTEI_MAXAM 7
+#define _SIMINT_NSHELL_SIMD 16
+#define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
+
+typedef double* dbl_ptr;
+
+int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
+
+CIntStatus_t 
+CInt_computeShellQuartetBatch_SIMINT(
+    BasisSet_t basis, SIMINT_t simint, int tid,
+    int M, int N, int *P_list, int *Q_list,
+    int npair, dbl_ptr *batch_integrals, int *batch_nints
+);
+
+/* ----------- huangh223 modification part end ----------- */
 
 #ifdef __INTEL_OFFLOAD
 CIntStatus_t CInt_offload_createBasisSet( BasisSet_t *_basis );
