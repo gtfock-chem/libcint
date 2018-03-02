@@ -217,11 +217,21 @@ typedef double* dbl_ptr;
 
 int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
 
+void CInt_SIMINT_createThreadShellBuf(void **thread_shell_buf);
+
+void CInt_SIMINT_freeThreadShellBuf(void **thread_shell_buf);
+
+void CInt_SIMINT_createThreadMultishellpairs(void **thread_multi_shellpairs);
+
+void CInt_SIMINT_freeThreadMultishellpairs(void **thread_multi_shellpairs);
+
 CIntStatus_t 
 CInt_computeShellQuartetBatch_SIMINT(
     BasisSet_t basis, SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
-    int npair, dbl_ptr *batch_integrals, int *batch_nints
+    int npair, dbl_ptr *thread_batch_integrals, int *thread_batch_nints,
+	void **thread_shell_buf, 
+	void **thread_multi_shellpairs
 );
 
 /* ----------- huangh223 modification part end ----------- */
