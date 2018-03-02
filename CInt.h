@@ -230,8 +230,8 @@ CInt_computeShellQuartetBatch_SIMINT(
     BasisSet_t basis, SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
     int npair, dbl_ptr *thread_batch_integrals, int *thread_batch_nints,
-	void **thread_shell_buf, 
-	void **thread_multi_shellpairs
+    void **thread_shell_buf, 
+    void **thread_multi_shellpairs
 );
 
 /* ----------- huangh223 modification part end ----------- */
