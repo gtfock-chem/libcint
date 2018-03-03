@@ -180,7 +180,7 @@ int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q)
 void CInt_SIMINT_createThreadShellBuf(void **thread_shell_buf)
 {
     struct simint_shell *shell_buf = (struct simint_shell *) malloc(sizeof(struct simint_shell) * 2 * _SIMINT_NSHELL_SIMD);
-    assert(shell_buf != NULL);
+    CINT_ASSERT(shell_buf != NULL);
     
     for (int i = 0; i < 2 * _SIMINT_NSHELL_SIMD; i++)
         simint_initialize_shell(&shell_buf[i]);
@@ -191,7 +191,7 @@ void CInt_SIMINT_createThreadShellBuf(void **thread_shell_buf)
 void CInt_SIMINT_freeThreadShellBuf(void **thread_shell_buf)
 {
     struct simint_shell *shell_buf = (struct simint_shell *) *thread_shell_buf;
-    assert(shell_buf != NULL);
+    CINT_ASSERT(shell_buf != NULL);
     
     for (int i = 0; i < 2 * _SIMINT_NSHELL_SIMD; i++)
         simint_free_shell(&shell_buf[i]);
@@ -203,7 +203,7 @@ void CInt_SIMINT_createThreadMultishellpairs(void **thread_multi_shellpairs)
 {
     struct simint_multi_shellpair *multi_shellpairs;
     multi_shellpairs = (struct simint_multi_shellpair *) malloc(sizeof(struct simint_multi_shellpair));
-    assert(multi_shellpairs != NULL);
+    CINT_ASSERT(multi_shellpairs != NULL);
     
     // We can only init multi_shellpairs without pre-allocating memory for it
     simint_initialize_multi_shellpair(multi_shellpairs);
@@ -214,7 +214,7 @@ void CInt_SIMINT_createThreadMultishellpairs(void **thread_multi_shellpairs)
 void CInt_SIMINT_freeThreadMultishellpairs(void **thread_multi_shellpairs)
 {
     struct simint_multi_shellpair *multi_shellpairs = *thread_multi_shellpairs;
-    assert(multi_shellpairs != NULL);
+    CINT_ASSERT(multi_shellpairs != NULL);
     
     simint_free_multi_shellpair(multi_shellpairs);
     
@@ -236,6 +236,8 @@ static void CInt_SIMINT_gatherShellsFromList(
     }
 }
 
+// Create a simint_multi_shellpair with given shell pairs,
+// Simint already has a function for this :) 
 static void CInt_SIMINT_fillMultishellpairsWithShells(
     SIMINT_t simint, int npairs,
     struct simint_shell *shell_buf, 
@@ -250,8 +252,7 @@ static void CInt_SIMINT_fillMultishellpairsWithShells(
 
 // Compute ( M N | P_list[i] Q_list[i] ), i = 0, ..., npairs - 1
 // AM(P_list[:]) are the same, and AM(Q_list[:]) are the same
-// (P_list[:], Q_list[:]) should be packed as a simint_multi_shelpair,
-// but I haven't finish that yet.
+// (P_list[:], Q_list[:]) will be packed as a simint_multi_shelpair.
 CIntStatus_t 
 CInt_computeShellQuartetBatch_SIMINT(
     BasisSet_t basis, SIMINT_t simint, int tid,
@@ -264,12 +265,9 @@ CInt_computeShellQuartetBatch_SIMINT(
     TimerType start0, stop0;
     TimerType start1, stop1;
 
-    int size, ret;
-    struct simint_multi_shellpair *bra_pair_p;
-
     if (tid==0) CLOCK(start0);
 
-    bra_pair_p = &simint->shellpairs[M * basis->nshells + N];
+    struct simint_multi_shellpair *bra_pair_p = &simint->shellpairs[M * basis->nshells + N];
     
     struct simint_shell           *ket_shell_buf        = (struct simint_shell *)           *thread_shell_buf;
     struct simint_multi_shellpair *ket_multi_shellpairs = (struct simint_multi_shellpair *) *thread_multi_shellpairs;
@@ -288,29 +286,29 @@ CInt_computeShellQuartetBatch_SIMINT(
     );
     
     if (tid==0) CLOCK(start1);
-    ret = simint_compute_eri(
+    int ret = simint_compute_eri(
         bra_pair_p, ket_multi_shellpairs, simint->screen_tol,
         &simint->workbuf[tid*simint->workmem_per_thread],
         &simint->outbuf [tid*simint->outmem_per_thread]
     );
+    CINT_ASSERT(ret == npairs);
     if (tid==0) CLOCK(stop1);
     
-    int accu_size = 0;
     
+
+    struct simint_shell *shells = simint->shells;
+    // Shells in P_list[] have same AM, shells in Q_list[] have same AM,
+    // The result sizes for each quartets are the same
+    int P = P_list[0], Q = Q_list[0];
+    int quartet_result_size = (shells[M].am+1)*(shells[M].am+2)/2 *
+                              (shells[N].am+1)*(shells[N].am+2)/2 *
+                              (shells[P].am+1)*(shells[P].am+2)/2 *
+                              (shells[Q].am+1)*(shells[Q].am+2)/2;
     for (int ipair = 0; ipair < npairs; ipair++)
     {
-        int P = P_list[ipair];
-        int Q = Q_list[ipair];
-        
-        struct simint_shell *shells = simint->shells;
-        size = (shells[M].am+1)*(shells[M].am+2)/2 *
-               (shells[N].am+1)*(shells[N].am+2)/2 *
-               (shells[P].am+1)*(shells[P].am+2)/2 *
-               (shells[Q].am+1)*(shells[Q].am+2)/2;
-
-        thread_batch_integrals[ipair] = &simint->outbuf[tid*simint->outmem_per_thread + accu_size];
-        thread_batch_nints[ipair]     = size;
-        accu_size += size;
+        // The result data in Simint output buffer is continuous 
+        thread_batch_integrals[ipair] = &simint->outbuf[tid*simint->outmem_per_thread + ipair * quartet_result_size];
+        thread_batch_nints[ipair]     = quartet_result_size;
     }
     
     if (tid==0) CLOCK(stop0);

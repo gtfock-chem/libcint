@@ -209,8 +209,13 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 
 /* ---------- huangh223 modification part start ---------- */
 
+// The following 2 constants are corresponding to SIMINT_OSTEI_MAXAM
+// and SIMINT_NSHELL_SIMD in Simint. I cannot include <simint/simint.h>
+// here, so I just update the values manually. This problem should be 
+// solved later.
 #define _SIMINT_OSTEI_MAXAM 7
 #define _SIMINT_NSHELL_SIMD 16
+
 #define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
 
 typedef double* dbl_ptr;

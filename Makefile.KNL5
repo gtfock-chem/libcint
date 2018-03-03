@@ -1,5 +1,6 @@
 alignlen = 64
 
+# Options for KNL5
 CC  = icc -std=gnu99
 CXX = icpc
 FC  = ifort
