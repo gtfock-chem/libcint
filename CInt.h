@@ -218,8 +218,6 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 
 #define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
 
-typedef double* dbl_ptr;
-
 int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
 
 void CInt_SIMINT_createThreadShellBuf(void **thread_shell_buf);
@@ -234,7 +232,7 @@ CIntStatus_t
 CInt_computeShellQuartetBatch_SIMINT(
     BasisSet_t basis, SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
-    int npair, dbl_ptr *thread_batch_integrals, int *thread_batch_nints,
+    int npair, double **thread_batch_integrals, int *thread_batch_nints,
     void **thread_shell_buf, 
     void **thread_multi_shellpairs
 );

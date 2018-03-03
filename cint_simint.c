@@ -257,13 +257,15 @@ CIntStatus_t
 CInt_computeShellQuartetBatch_SIMINT(
     BasisSet_t basis, SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
-    int npairs, dbl_ptr *thread_batch_integrals, int *thread_batch_nints,
+    int npairs, double **thread_batch_integrals, int *thread_batch_nints,
     void **thread_shell_buf, 
     void **thread_multi_shellpairs
 )
 {
     TimerType start0, stop0;
     TimerType start1, stop1;
+    
+    int ret, size;
 
     if (tid==0) CLOCK(start0);
 
@@ -286,30 +288,30 @@ CInt_computeShellQuartetBatch_SIMINT(
     );
     
     if (tid==0) CLOCK(start1);
-    int ret = simint_compute_eri(
+    ret = simint_compute_eri(
         bra_pair_p, ket_multi_shellpairs, simint->screen_tol,
         &simint->workbuf[tid*simint->workmem_per_thread],
         &simint->outbuf [tid*simint->outmem_per_thread]
     );
-    CINT_ASSERT(ret == npairs);
     if (tid==0) CLOCK(stop1);
     
+    if (ret <= 0)
+    {
+        size = 0; // Return zero size to caller; output buffer is not initialized
+    } else {
+        CINT_ASSERT(ret == npairs);
+        struct simint_shell *shells = simint->shells;
+        int P = P_list[0], Q = Q_list[0];
+        size  = (shells[M].am+1)*(shells[M].am+2)/2 *
+                (shells[N].am+1)*(shells[N].am+2)/2 *
+                (shells[P].am+1)*(shells[P].am+2)/2 *
+                (shells[Q].am+1)*(shells[Q].am+2)/2;
+    }
     
-
-    struct simint_shell *shells = simint->shells;
     // Shells in P_list[] have same AM, shells in Q_list[] have same AM,
     // The result sizes for each quartets are the same
-    int P = P_list[0], Q = Q_list[0];
-    int quartet_result_size = (shells[M].am+1)*(shells[M].am+2)/2 *
-                              (shells[N].am+1)*(shells[N].am+2)/2 *
-                              (shells[P].am+1)*(shells[P].am+2)/2 *
-                              (shells[Q].am+1)*(shells[Q].am+2)/2;
-    for (int ipair = 0; ipair < npairs; ipair++)
-    {
-        // The result data in Simint output buffer is continuous 
-        thread_batch_integrals[ipair] = &simint->outbuf[tid*simint->outmem_per_thread + ipair * quartet_result_size];
-        thread_batch_nints[ipair]     = quartet_result_size;
-    }
+    *thread_batch_integrals = &simint->outbuf[tid*simint->outmem_per_thread];
+    *thread_batch_nints     = size;
     
     if (tid==0) CLOCK(stop0);
     if (tid==0)
