@@ -220,20 +220,15 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 
 int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
 
-void CInt_SIMINT_createThreadShellBuf(void **thread_shell_buf);
+void CInt_SIMINT_createThreadMultishellpair(void **thread_multi_shellpair);
 
-void CInt_SIMINT_freeThreadShellBuf(void **thread_shell_buf);
-
-void CInt_SIMINT_createThreadMultishellpairs(void **thread_multi_shellpairs);
-
-void CInt_SIMINT_freeThreadMultishellpairs(void **thread_multi_shellpairs);
+void CInt_SIMINT_freeThreadMultishellpair(void **thread_multi_shellpair);
 
 CIntStatus_t 
 CInt_computeShellQuartetBatch_SIMINT(
     BasisSet_t basis, SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
     int npair, double **thread_batch_integrals, int *thread_batch_nints,
-    void **thread_shell_buf, 
     void **thread_multi_shellpairs
 );
 
