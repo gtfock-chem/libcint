@@ -218,11 +218,15 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 
 #define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
 
-int CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
+double CInt_get_walltime_sec();
 
-void CInt_SIMINT_createThreadMultishellpair(void **thread_multi_shellpair);
+void   CInt_SIMINT_addupdateFtimer(SIMINT_t simint, double sec);
 
-void CInt_SIMINT_freeThreadMultishellpair(void **thread_multi_shellpair);
+int    CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
+
+void   CInt_SIMINT_createThreadMultishellpair(void **thread_multi_shellpair);
+
+void   CInt_SIMINT_freeThreadMultishellpair(void **thread_multi_shellpair);
 
 CIntStatus_t 
 CInt_computeShellQuartetBatch_SIMINT(
