@@ -207,6 +207,36 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                            int A, int B,
                            double **integrals, int *nints);
 
+/* ---------- huangh223 modification part start ---------- */
+
+// The following 2 constants are corresponding to SIMINT_OSTEI_MAXAM
+// and SIMINT_NSHELL_SIMD in Simint. I cannot include <simint/simint.h>
+// here, so I just update the values manually. This problem should be 
+// solved later.
+#define _SIMINT_OSTEI_MAXAM 7
+#define _SIMINT_NSHELL_SIMD 16
+
+#define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
+
+double CInt_get_walltime_sec();
+
+void   CInt_SIMINT_addupdateFtimer(SIMINT_t simint, double sec);
+
+int    CInt_SIMINT_getShellpairAMIndex(SIMINT_t simint, int P, int Q);
+
+void   CInt_SIMINT_createThreadMultishellpair(void **thread_multi_shellpair);
+
+void   CInt_SIMINT_freeThreadMultishellpair(void **thread_multi_shellpair);
+
+CIntStatus_t 
+CInt_computeShellQuartetBatch_SIMINT(
+    BasisSet_t basis, SIMINT_t simint, int tid,
+    int M, int N, int *P_list, int *Q_list,
+    int npair, double **thread_batch_integrals, int *thread_batch_nints,
+    void **thread_multi_shellpairs
+);
+
+/* ----------- huangh223 modification part end ----------- */
 
 #ifdef __INTEL_OFFLOAD
 CIntStatus_t CInt_offload_createBasisSet( BasisSet_t *_basis );
