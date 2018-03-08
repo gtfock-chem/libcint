@@ -55,7 +55,7 @@ struct SIMINT
     TimerType time_outer;
     TimerType time_inner;
     
-    double ostei_actual, ostei_wrapper, fock_update_F;
+    double ostei_actual, ostei_setup, fock_update_F;
 };
 
 // CInt_createSIMINT is called by all nodes.
@@ -142,7 +142,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     s->time_outer = 0;
     s->time_inner = 0;
     
-    s->ostei_wrapper = 0.0;
+    s->ostei_setup = 0.0;
     s->ostei_actual  = 0.0;
     s->fock_update_F = 0.0;
 
@@ -155,8 +155,8 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
     // printf("Time outer: %f\n", simint->time_outer/2.3e9);
     // printf("Time inner: %f\n", simint->time_inner/2.3e9);
     printf(
-        "Timer: OSTEI wrapper, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec.\n", 
-        simint->ostei_wrapper, simint->ostei_actual, simint->fock_update_F
+        "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec.\n", 
+        simint->ostei_setup, simint->ostei_actual, simint->fock_update_F
     );
 
     struct simint_multi_shellpair *shellpair_p = simint->shellpairs;
@@ -262,14 +262,14 @@ CInt_computeShellQuartetBatch_SIMINT(
 {
     TimerType start0, stop0;
     TimerType start1, stop1;
-    double wrapper_start, wrapper_end, ostei_start, ostei_end;
+    double setup_start, setup_end, ostei_start, ostei_end;
     
     int ret, size;
 
     if (tid == 0) 
     {
         CLOCK(start0);
-        wrapper_start = CInt_get_walltime_sec();
+        setup_start = CInt_get_walltime_sec();
     }
 
     struct simint_multi_shellpair *bra_pair_p = &simint->shellpairs[M * basis->nshells + N];
@@ -282,6 +282,8 @@ CInt_computeShellQuartetBatch_SIMINT(
         multi_shellpair,
         P_list, Q_list
     );
+	
+	if (tid == 0) setup_end = CInt_get_walltime_sec();
     
     if (tid == 0) 
     {
@@ -320,11 +322,10 @@ CInt_computeShellQuartetBatch_SIMINT(
     if (tid == 0)
     {
         CLOCK(stop0);
-        wrapper_end = CInt_get_walltime_sec();
         simint->time_outer += (stop0-start0);
         simint->time_inner += (stop1-start1);
-        simint->ostei_wrapper += wrapper_end - wrapper_start;
-        simint->ostei_actual  += ostei_end   - ostei_start;
+        simint->ostei_setup  += setup_end - setup_start;
+        simint->ostei_actual += ostei_end - ostei_start;
     }
 
     return CINT_STATUS_SUCCESS;
