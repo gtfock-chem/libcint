@@ -81,7 +81,8 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     // allocate outbuf for all threads on this node
     int max_ncart = ( (s->max_am+1)*(s->max_am+2) )/2;
     int maxsize = max_ncart * max_ncart * max_ncart * max_ncart; // consider aligning
-    s->outmem_per_thread = maxsize * _SIMINT_NSHELL_SIMD;
+	// Output buffer should holds SIMINT_NSHELL_SIMD ERI results
+    s->outmem_per_thread = maxsize * _SIMINT_NSHELL_SIMD;  
     s->outbuf = (double *) malloc(s->outmem_per_thread * nthreads * sizeof(double));
     CINT_ASSERT(s->outbuf != NULL);
 
@@ -123,7 +124,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     printf("Screen tol:    %e\n", s->screen_tol);
 
     // precompute all shell pairs
-    // could just do this as needed
+    // will be used by CInt_SIMINT_fillMultishellpairByShellList(), DO NOT SKIP it!!!
     s->shellpairs = (struct simint_multi_shellpair *)
         malloc(sizeof(struct simint_multi_shellpair)*basis->nshells*basis->nshells);
     CINT_ASSERT(s->shellpairs != NULL);
@@ -180,8 +181,6 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 // for Simint, caller provides memory where integrals will be stored;
 // for ERD, library returns pointer to where integrals are stored;
 
-/* ---------- huangh223 modification part start ---------- */
-
 double CInt_get_walltime_sec()
 {
     double sec;
@@ -225,9 +224,8 @@ void CInt_SIMINT_freeThreadMultishellpair(void **thread_multi_shellpair)
 }
 
 static void CInt_SIMINT_fillMultishellpairByShellList(
-    BasisSet_t basis, SIMINT_t simint, int npairs, 
-    struct simint_multi_shellpair *multi_shellpair,
-    int *P_list, int *Q_list
+    SIMINT_t simint, int npairs, int *P_list, int *Q_list, 
+    struct simint_multi_shellpair *multi_shellpair
 )
 {
     // Put the original multi_shellpairs corresponding to the shell
@@ -237,7 +235,7 @@ static void CInt_SIMINT_fillMultishellpairByShellList(
     {
         int P = P_list[ipair];
         int Q = Q_list[ipair];
-        Pin[ipair] = &simint->shellpairs[P * basis->nshells + Q];
+        Pin[ipair] = &simint->shellpairs[P * simint->nshells + Q];
     }
     
     // Reset output multi_shellpair and copy from existing multi_shellpairs.
@@ -254,7 +252,7 @@ static void CInt_SIMINT_fillMultishellpairByShellList(
 // (P_list[:], Q_list[:]) will be packed as a simint_multi_shelpair.
 CIntStatus_t 
 CInt_computeShellQuartetBatch_SIMINT(
-    BasisSet_t basis, SIMINT_t simint, int tid,
+    SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
     int npairs, double **thread_batch_integrals, int *thread_batch_nints,
     void **thread_multi_shellpair
@@ -272,16 +270,12 @@ CInt_computeShellQuartetBatch_SIMINT(
         setup_start = CInt_get_walltime_sec();
     }
 
-    struct simint_multi_shellpair *bra_pair_p = &simint->shellpairs[M * basis->nshells + N];
+    struct simint_multi_shellpair *bra_pair_p = &simint->shellpairs[M * simint->nshells + N];
     
     struct simint_multi_shellpair *multi_shellpair = (struct simint_multi_shellpair *) *thread_multi_shellpair;
     assert(multi_shellpair != NULL);
     
-    CInt_SIMINT_fillMultishellpairByShellList(
-        basis, simint, npairs, 
-        multi_shellpair,
-        P_list, Q_list
-    );
+    CInt_SIMINT_fillMultishellpairByShellList(simint, npairs, P_list, Q_list, multi_shellpair);
 	
 	if (tid == 0) setup_end = CInt_get_walltime_sec();
     
@@ -331,10 +325,9 @@ CInt_computeShellQuartetBatch_SIMINT(
     return CINT_STATUS_SUCCESS;
 }
 
-/* ----------- huangh223 modification part end ----------- */
-
+// Compute a shell quartet (AB|CD) at a time
 CIntStatus_t 
-CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
                                 double **integrals, int *nints)
 {
@@ -347,8 +340,8 @@ CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
 
     if (tid==0) CLOCK(start0);
 
-    bra_pair_p = &simint->shellpairs[A*basis->nshells+B];
-    ket_pair_p = &simint->shellpairs[C*basis->nshells+D];
+    bra_pair_p = &simint->shellpairs[A*simint->nshells+B];
+    ket_pair_p = &simint->shellpairs[C*simint->nshells+D];
 
     if (tid==0) CLOCK(start1);
     ret = simint_compute_eri(bra_pair_p, ket_pair_p, simint->screen_tol,

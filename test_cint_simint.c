@@ -67,7 +67,7 @@ int main (int argc, char **argv)
     for (int k=0; k<nshells; k++)
     for (int l=0; l<nshells; l++)
     {
-        CInt_computeShellQuartet_SIMINT(basis, simint, /*tid*/0,
+        CInt_computeShellQuartet_SIMINT(simint, /*tid*/0,
             i, j, k, l, &integrals, &nints);
         permute(CInt_getShellDim(basis, i),
                 CInt_getShellDim(basis, j),
