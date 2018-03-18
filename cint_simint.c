@@ -52,9 +52,6 @@ struct SIMINT
     double screen_tol;
 
     // only master thread will write to these
-    TimerType time_outer;
-    TimerType time_inner;
-    
     double ostei_actual, ostei_setup, fock_update_F;
 };
 
@@ -81,7 +78,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     // allocate outbuf for all threads on this node
     int max_ncart = ( (s->max_am+1)*(s->max_am+2) )/2;
     int maxsize = max_ncart * max_ncart * max_ncart * max_ncart; // consider aligning
-	// Output buffer should holds SIMINT_NSHELL_SIMD ERI results
+    // Output buffer should holds SIMINT_NSHELL_SIMD ERI results
     s->outmem_per_thread = maxsize * _SIMINT_NSHELL_SIMD;  
     s->outbuf = (double *) malloc(s->outmem_per_thread * nthreads * sizeof(double));
     CINT_ASSERT(s->outbuf != NULL);
@@ -139,11 +136,8 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
             simint_create_multi_shellpair(1, s->shells+i, 1, s->shells+j, pair, s->screen_method);
         }
     }
-
-    s->time_outer = 0;
-    s->time_inner = 0;
     
-    s->ostei_setup = 0.0;
+    s->ostei_setup   = 0.0;
     s->ostei_actual  = 0.0;
     s->fock_update_F = 0.0;
 
@@ -258,17 +252,11 @@ CInt_computeShellQuartetBatch_SIMINT(
     void **thread_multi_shellpair
 )
 {
-    TimerType start0, stop0;
-    TimerType start1, stop1;
     double setup_start, setup_end, ostei_start, ostei_end;
     
     int ret, size;
 
-    if (tid == 0) 
-    {
-        CLOCK(start0);
-        setup_start = CInt_get_walltime_sec();
-    }
+    if (tid == 0) setup_start = CInt_get_walltime_sec();
 
     struct simint_multi_shellpair *bra_pair_p = &simint->shellpairs[M * simint->nshells + N];
     
@@ -276,24 +264,20 @@ CInt_computeShellQuartetBatch_SIMINT(
     assert(multi_shellpair != NULL);
     
     CInt_SIMINT_fillMultishellpairByShellList(simint, npairs, P_list, Q_list, multi_shellpair);
-	
-	if (tid == 0) setup_end = CInt_get_walltime_sec();
     
     if (tid == 0) 
     {
-        CLOCK(start1);
+        setup_end   = CInt_get_walltime_sec();
         ostei_start = CInt_get_walltime_sec();
     }
+    
     ret = simint_compute_eri(
         bra_pair_p, multi_shellpair, simint->screen_tol,
         &simint->workbuf[tid*simint->workmem_per_thread],
         &simint->outbuf [tid*simint->outmem_per_thread]
     );
-    if (tid == 0) 
-    {
-        CLOCK(stop1);
-        ostei_end = CInt_get_walltime_sec();
-    }
+    
+    if (tid == 0) ostei_end = CInt_get_walltime_sec();
     
     if (ret <= 0)
     {
@@ -315,9 +299,6 @@ CInt_computeShellQuartetBatch_SIMINT(
     
     if (tid == 0)
     {
-        CLOCK(stop0);
-        simint->time_outer += (stop0-start0);
-        simint->time_inner += (stop1-start1);
         simint->ostei_setup  += setup_end - setup_start;
         simint->ostei_actual += ostei_end - ostei_start;
     }
@@ -331,27 +312,34 @@ CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
                                 double **integrals, int *nints)
 {
-    TimerType start0, stop0;
-    TimerType start1, stop1;
-
+    double setup_start, setup_end, ostei_start, ostei_end;
+    
     int size, ret;
     struct simint_multi_shellpair *bra_pair_p;
     struct simint_multi_shellpair *ket_pair_p;
 
-    if (tid==0) CLOCK(start0);
+    if (tid == 0) setup_start = CInt_get_walltime_sec();
 
     bra_pair_p = &simint->shellpairs[A*simint->nshells+B];
     ket_pair_p = &simint->shellpairs[C*simint->nshells+D];
 
-    if (tid==0) CLOCK(start1);
-    ret = simint_compute_eri(bra_pair_p, ket_pair_p, simint->screen_tol,
-      &simint->workbuf[tid*simint->workmem_per_thread],
-      &simint->outbuf [tid*simint->outmem_per_thread]);
-    if (tid==0) CLOCK(stop1);
-    if (ret < 0)
-        size = 0; // return zero size to caller; output buffer is not initialized
-    else
+    if (tid == 0) 
     {
+        setup_end   = CInt_get_walltime_sec();
+        ostei_start = CInt_get_walltime_sec();
+    }
+    
+    ret = simint_compute_eri(
+        bra_pair_p, ket_pair_p, simint->screen_tol,
+        &simint->workbuf[tid * simint->workmem_per_thread],
+        &simint->outbuf [tid * simint->outmem_per_thread]
+    );
+    
+    if (tid == 0) ostei_end = CInt_get_walltime_sec();
+    
+    if (ret < 0) {
+        size = 0; // return zero size to caller; output buffer is not initialized
+    } else {
         CINT_ASSERT(ret == 1); // single shell quartet
         struct simint_shell *shells = simint->shells;
         size = (shells[A].am+1)*(shells[A].am+2)/2 *
@@ -363,11 +351,10 @@ CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
     *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
     *nints = size;
 
-    if (tid==0) CLOCK(stop0);
-    if (tid==0)
+    if (tid == 0)
     {
-        simint->time_outer += (stop0-start0);
-        simint->time_inner += (stop1-start1);
+        simint->ostei_setup  += setup_end - setup_start;
+        simint->ostei_actual += ostei_end - ostei_start;
     }
 
     return CINT_STATUS_SUCCESS;
