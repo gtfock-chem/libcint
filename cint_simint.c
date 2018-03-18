@@ -51,8 +51,11 @@ struct SIMINT
     int    screen_method;
     double screen_tol;
 
-    // only master thread will write to these
+    // For timer, only master thread will write to these
     double ostei_actual, ostei_setup, fock_update_F;
+
+    // For statistic
+    double *num_multi_shellpairs, *sum_nprim;
 };
 
 // CInt_createSIMINT is called by all nodes.
@@ -137,21 +140,34 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
         }
     }
     
+    // Reset timer
     s->ostei_setup   = 0.0;
     s->ostei_actual  = 0.0;
     s->fock_update_F = 0.0;
 
+    // Allocate space for statistic info
+    s->num_multi_shellpairs = (double*) malloc(sizeof(double) * nthreads);
+    s->sum_nprim = (double*) malloc(sizeof(double) * nthreads);
+    CINT_ASSERT(s->num_multi_shellpairs != NULL && s->sum_nprim != NULL);
+    memset(s->num_multi_shellpairs, 0, sizeof(double) * nthreads);
+    memset(s->sum_nprim, 0, sizeof(double) * nthreads);
+    
     *simint = s;
     return CINT_STATUS_SUCCESS;
 }
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 {
-    // printf("Time outer: %f\n", simint->time_outer/2.3e9);
-    // printf("Time inner: %f\n", simint->time_inner/2.3e9);
+    double sum_msp = 0, sum_nprim = 0;
+    for (int i = 0; i < simint->nthreads; i++)
+    {
+        sum_msp   += (double) simint->num_multi_shellpairs[i];
+        sum_nprim += (double) simint->sum_nprim[i];
+    }
+    double avg_nprim = sum_nprim / sum_msp;
     printf(
-        "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec.\n", 
-        simint->ostei_setup, simint->ostei_actual, simint->fock_update_F
+        "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec. Avg. ket-side prims = %.1lf\n", 
+        simint->ostei_setup, simint->ostei_actual, simint->fock_update_F, avg_nprim
     );
 
     struct simint_multi_shellpair *shellpair_p = simint->shellpairs;
@@ -166,6 +182,8 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
     free(simint->shells);
     free(simint->workbuf);
     free(simint->outbuf);
+    free(simint->num_multi_shellpairs);
+    free(simint->sum_nprim);
     free(simint);
 
     simint_finalize();
@@ -265,6 +283,9 @@ CInt_computeShellQuartetBatch_SIMINT(
     
     CInt_SIMINT_fillMultishellpairByShellList(simint, npairs, P_list, Q_list, multi_shellpair);
     
+    simint->num_multi_shellpairs[tid] += 1.0;
+    simint->sum_nprim[tid] += (double) multi_shellpair->nprim;
+    
     if (tid == 0) 
     {
         setup_end   = CInt_get_walltime_sec();
@@ -320,8 +341,11 @@ CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
 
     if (tid == 0) setup_start = CInt_get_walltime_sec();
 
-    bra_pair_p = &simint->shellpairs[A*simint->nshells+B];
-    ket_pair_p = &simint->shellpairs[C*simint->nshells+D];
+    bra_pair_p = &simint->shellpairs[A*simint->nshells + B];
+    ket_pair_p = &simint->shellpairs[C*simint->nshells + D];
+    
+    simint->num_multi_shellpairs[tid] += 1.0;
+    simint->sum_nprim[tid] += (double) ket_pair_p->nprim;
 
     if (tid == 0) 
     {
