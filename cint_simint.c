@@ -56,6 +56,7 @@ struct SIMINT
 
     // For statistic
     double *num_multi_shellpairs, *sum_nprim;
+    double *num_screened_prim, *num_unscreened_prim, *num_screened_vec, *num_unscreened_vec;
 };
 
 // CInt_createSIMINT is called by all nodes.
@@ -82,7 +83,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     int max_ncart = ( (s->max_am+1)*(s->max_am+2) )/2;
     int maxsize = max_ncart * max_ncart * max_ncart * max_ncart; // consider aligning
     // Output buffer should holds SIMINT_NSHELL_SIMD ERI results
-    s->outmem_per_thread = maxsize * _SIMINT_NSHELL_SIMD;  
+    s->outmem_per_thread = maxsize * _SIMINT_NSHELL_SIMD + 4;  
     s->outbuf = (double *) malloc(s->outmem_per_thread * nthreads * sizeof(double));
     CINT_ASSERT(s->outbuf != NULL);
 
@@ -146,11 +147,22 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     s->fock_update_F = 0.0;
 
     // Allocate space for statistic info
-    s->num_multi_shellpairs = (double*) malloc(sizeof(double) * nthreads);
-    s->sum_nprim = (double*) malloc(sizeof(double) * nthreads);
-    CINT_ASSERT(s->num_multi_shellpairs != NULL && s->sum_nprim != NULL);
-    memset(s->num_multi_shellpairs, 0, sizeof(double) * nthreads);
-    memset(s->sum_nprim, 0, sizeof(double) * nthreads);
+    int stat_info_size = sizeof(double) * nthreads;
+    s->num_multi_shellpairs = (double*) malloc(stat_info_size);
+    s->sum_nprim            = (double*) malloc(stat_info_size);
+    s->num_screened_prim   = (double*) malloc(stat_info_size);
+    s->num_unscreened_prim = (double*) malloc(stat_info_size);
+    s->num_screened_vec    = (double*) malloc(stat_info_size);
+    s->num_unscreened_vec  = (double*) malloc(stat_info_size);
+    CINT_ASSERT(s->num_multi_shellpairs != NULL && s->sum_nprim           != NULL);
+    CINT_ASSERT(s->num_screened_prim    != NULL && s->num_unscreened_prim != NULL);
+    CINT_ASSERT(s->num_screened_vec     != NULL && s->num_unscreened_vec  != NULL);
+    memset(s->num_multi_shellpairs, 0, stat_info_size);
+    memset(s->sum_nprim,            0, stat_info_size);
+    memset(s->num_screened_prim,    0, stat_info_size);
+    memset(s->num_unscreened_prim,  0, stat_info_size);
+    memset(s->num_screened_vec,     0, stat_info_size);
+    memset(s->num_unscreened_vec,   0, stat_info_size);
     
     *simint = s;
     return CINT_STATUS_SUCCESS;
@@ -158,18 +170,34 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 
 CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
 {
+    // Generate final statistic info
     double sum_msp = 0, sum_nprim = 0;
+    double total_prim = 0, unscreened_prim = 0;
+    double total_vec  = 0, unscreened_vec  = 0;
     for (int i = 0; i < simint->nthreads; i++)
     {
-        sum_msp   += (double) simint->num_multi_shellpairs[i];
-        sum_nprim += (double) simint->sum_nprim[i];
+        sum_msp    += (double) simint->num_multi_shellpairs[i];
+        sum_nprim  += (double) simint->sum_nprim[i];
+        total_prim      += simint->num_screened_prim[i] + simint->num_unscreened_prim[i];
+        unscreened_prim += simint->num_unscreened_prim[i];
+        total_vec       += simint->num_screened_vec[i] + simint->num_unscreened_vec[i];
+        unscreened_vec  += simint->num_unscreened_vec[i];
     }
     double avg_nprim = sum_nprim / sum_msp;
+    double prim_unscreen_ratio = unscreened_prim / total_prim;
+    double vec_unscreen_ratio  = unscreened_vec  / total_vec;
+    
+    // Print timer and statistic info
     printf(
-        "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec. Avg. ket-side prims = %.1lf\n", 
-        simint->ostei_setup, simint->ostei_actual, simint->fock_update_F, avg_nprim
+        "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec\n", 
+        simint->ostei_setup, simint->ostei_actual, simint->fock_update_F
+    );
+    printf(
+        "Simint statistic: avg. ket-side nprim, prim unscreened ratio, SIMD unscreened ratio = %.1lf, %.1lf %%, %.1lf %%\n",
+        avg_nprim, prim_unscreen_ratio * 100.0, vec_unscreen_ratio * 100.0
     );
 
+    // Free shell pair info
     struct simint_multi_shellpair *shellpair_p = simint->shellpairs;
     for (int i=0; i<simint->nshells*simint->nshells; i++)
         simint_free_multi_shellpair(shellpair_p++);
@@ -178,12 +206,17 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
     for (int i=0; i<simint->nshells; i++)
         simint_free_shell(shell_p++);
 
+    // Free memory
     free(simint->shellpairs);
     free(simint->shells);
     free(simint->workbuf);
     free(simint->outbuf);
     free(simint->num_multi_shellpairs);
     free(simint->sum_nprim);
+    free(simint->num_screened_prim);
+    free(simint->num_unscreened_prim);
+    free(simint->num_screened_vec);
+    free(simint->num_unscreened_vec);
     free(simint);
 
     simint_finalize();
@@ -318,6 +351,12 @@ CInt_computeShellQuartetBatch_SIMINT(
     *thread_batch_integrals = &simint->outbuf[tid*simint->outmem_per_thread];
     *thread_batch_nints     = size;
     
+    double *prim_screen_stat_info = *thread_batch_integrals + size * npairs;
+    simint->num_unscreened_prim[tid] += prim_screen_stat_info[0];
+    simint->num_screened_prim[tid]   += prim_screen_stat_info[1];
+    simint->num_unscreened_vec[tid]  += prim_screen_stat_info[2];
+    simint->num_screened_vec[tid]    += prim_screen_stat_info[3];
+    
     if (tid == 0)
     {
         simint->ostei_setup  += setup_end - setup_start;
@@ -374,6 +413,12 @@ CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
 
     *integrals = &simint->outbuf[tid*simint->outmem_per_thread];
     *nints = size;
+    
+    double *prim_screen_stat_info = *integrals + size;
+    simint->num_unscreened_prim[tid] += prim_screen_stat_info[0];
+    simint->num_screened_prim[tid]   += prim_screen_stat_info[1];
+    simint->num_unscreened_vec[tid]  += prim_screen_stat_info[2];
+    simint->num_screened_vec[tid]    += prim_screen_stat_info[3];
 
     if (tid == 0)
     {
