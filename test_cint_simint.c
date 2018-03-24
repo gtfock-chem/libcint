@@ -90,5 +90,5 @@ int main (int argc, char **argv)
         printvec(nints, buffer);
     }
 
-    CInt_destroySIMINT(simint);
+    CInt_destroySIMINT(simint, 1);
 }
