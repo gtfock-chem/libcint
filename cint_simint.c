@@ -174,7 +174,7 @@ CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
     return CINT_STATUS_SUCCESS;
 }
 
-CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
+CIntStatus_t CInt_destroySIMINT(SIMINT_t simint, int show_stat)
 {
     // Generate final statistic info
     double sum_msp = 0, sum_nprim = 0;
@@ -194,14 +194,17 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint)
     double vec_unscreen_ratio  = unscreened_vec  / total_vec;
     
     // Print timer and statistic info
-    printf(
-        "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec\n", 
-        simint->ostei_setup, simint->ostei_actual, simint->fock_update_F
-    );
-    printf(
-        "Simint statistic: avg. ket-side nprim, prim unscreened ratio, SIMD unscreened ratio = %.1lf, %.1lf %%, %.1lf %%\n",
-        avg_nprim, prim_unscreen_ratio * 100.0, vec_unscreen_ratio * 100.0
-    );
+    if (show_stat)
+    {
+        printf(
+            "Timer: OSTEI setup, OSTEI actual, fock_task update_F = %lf, %lf, %lf sec\n", 
+            simint->ostei_setup, simint->ostei_actual, simint->fock_update_F
+        );
+        printf(
+            "Simint statistic: avg. ket-side nprim, prim unscreened ratio, SIMD unscreened ratio = %.1lf, %.1lf %%, %.1lf %%\n",
+            avg_nprim, prim_unscreen_ratio * 100.0, vec_unscreen_ratio * 100.0
+        );
+    }
 
     // Free shell pair info
     struct simint_multi_shellpair *shellpair_p = simint->shellpairs;

@@ -190,7 +190,7 @@ void CInt_getMaxMemory( ERD_t erd,
 
 CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads);
 
-CIntStatus_t CInt_destroySIMINT(SIMINT_t simint);
+CIntStatus_t CInt_destroySIMINT(SIMINT_t simint, int show_stat);
 
 CIntStatus_t
 CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
