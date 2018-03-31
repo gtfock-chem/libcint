@@ -184,7 +184,7 @@ CIntStatus_t CInt_offload_destroyERD (ERD_t erd)
     CIntStatus_t status;
     int mic_id;
 
-    status = CInt_destroyERD (erd);
+    status = CInt_destroyERD (erd, 1);
     if (status != CINT_STATUS_SUCCESS)
     {
         return status;
@@ -196,7 +196,7 @@ CIntStatus_t CInt_offload_destroyERD (ERD_t erd)
                 nocopy(erd_mic)\
                 out(status)
         {
-            status = CInt_destroyERD (erd_mic);
+            status = CInt_destroyERD (erd_mic, 1);
         }
         if (status != CINT_STATUS_SUCCESS)
         {

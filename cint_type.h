@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 Georgia Institute of Technology
+ * Copyright (c) 2013-2018 Georgia Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -73,7 +73,9 @@ struct ERD
     int **vrrtable;
 #ifdef __INTEL_OFFLOAD
     int mic_numdevs;
-#endif    
+#endif
+
+    double erd_wtime;
 };
 
 struct BasisSet

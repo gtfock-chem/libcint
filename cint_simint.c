@@ -20,7 +20,6 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
-#include <sys/time.h>
 
 #include <simint/simint.h>
 #include <CInt.h>
@@ -64,6 +63,9 @@ struct SIMINT
 // CInt_createSIMINT is called by all nodes.
 // All nodes have a copy of the BasisSet_t structure here and will form and 
 // store the Simint shells for all shells of the molecule.
+
+// for Simint, caller provides memory where integrals will be stored;
+// for ERD, library returns pointer to where integrals are stored;
 
 CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads)
 {
@@ -230,18 +232,6 @@ CIntStatus_t CInt_destroySIMINT(SIMINT_t simint, int show_stat)
 
     simint_finalize();
     return CINT_STATUS_SUCCESS;
-}
-
-// for Simint, caller provides memory where integrals will be stored;
-// for ERD, library returns pointer to where integrals are stored;
-
-double CInt_get_walltime_sec()
-{
-    double sec;
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0;
-    return sec;
 }
 
 void CInt_SIMINT_addupdateFtimer(SIMINT_t simint, double sec)
