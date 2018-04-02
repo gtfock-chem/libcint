@@ -285,7 +285,7 @@ static void CInt_SIMINT_fillMultishellpairByShellList(
     // Reset output multi_shellpair and copy from existing multi_shellpairs.
     // simint_cat_multi_shellpair() will check and allocate memory for output
     multi_shellpair->nprim = 0;
-    simint_cat_multi_shellpair(
+    simint_cat_shellpairs(
         npairs, (const struct simint_multi_shellpair **) Pin, 
         multi_shellpair, simint->screen_method
     );
