@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 Georgia Institute of Technology
+ * Copyright (c) 2013-2018 Georgia Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -122,11 +122,13 @@ CIntStatus_t CInt_createERD(BasisSet_t basis, ERD_t *erd, int nthreads) {
 }
 
 
-CIntStatus_t CInt_destroyERD(ERD_t erd) {
-    for (uint32_t i = 0; i < erd->nthreads; i++) {
+CIntStatus_t CInt_destroyERD(ERD_t erd, int show_wtime) 
+{
+    for (uint32_t i = 0; i < erd->nthreads; i++) 
         ALIGNED_FREE(erd->buffer[i]);
-    }
     free(erd->buffer);
+
+    if (show_wtime) printf("Timer: ERD wall-time = %lf sec\n", erd->erd_wtime);
 
     destroy_vrrtable(erd);
     free(erd);
@@ -165,6 +167,7 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
     }
 #endif
 
+    double st = CInt_get_walltime_sec();
     const uint32_t shell1 = basis->momentum[A];
     const uint32_t shell2 = basis->momentum[B];
     const uint32_t shell3 = basis->momentum[C];
@@ -191,6 +194,8 @@ CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis, ERD_t erd, int tid,
     }
 
     *integrals = erd->buffer[tid];
+    double et = CInt_get_walltime_sec();
+    if (tid == 0) erd->erd_wtime += et - st;
 
     if (*nints != 0 && isnan((*integrals)[0]))
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 Georgia Institute of Technology
+ * Copyright (c) 2013-2018 Georgia Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -153,7 +153,7 @@ CIntStatus_t CInt_createERD( BasisSet_t basis,
                              ERD_t *erd,
                              int nthreads );
 
-CIntStatus_t CInt_destroyERD( ERD_t erd );
+CIntStatus_t CInt_destroyERD( ERD_t erd, int show_wtime );
 
 
 CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
