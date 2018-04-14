@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 Georgia Institute of Technology
+ * Copyright (c) 2013-2018 Georgia Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published

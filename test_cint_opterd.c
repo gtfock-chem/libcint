@@ -78,5 +78,5 @@ int main (int argc, char **argv)
         CInt_destroyOED(oed[i]);
     free(oed);
 
-    CInt_destroyERD(erd);
+    CInt_destroyERD(erd, 1);
 }

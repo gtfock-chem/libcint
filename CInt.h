@@ -1,9 +1,26 @@
+/*
+ * Copyright (c) 2013-2018 Georgia Institute of Technology
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * The GNU Lesser General Public License is included in this distribution
+ * in the file COPYING.
+ */
+
 #ifndef __CINT_H__
 #define __CINT_H__
 
 
 #include <stdint.h>
-
+#include <sys/time.h>
 
 struct ERD;
 struct OED;
@@ -155,7 +172,7 @@ CIntStatus_t CInt_createERD( BasisSet_t basis,
                              ERD_t *erd,
                              int nthreads );
 
-CIntStatus_t CInt_destroyERD( ERD_t erd );
+CIntStatus_t CInt_destroyERD( ERD_t erd, int show_wtime );
 
 
 CIntStatus_t CInt_computeShellQuartet( BasisSet_t basis,
@@ -190,10 +207,10 @@ void CInt_getMaxMemory( ERD_t erd,
 
 CIntStatus_t CInt_createSIMINT(BasisSet_t basis, SIMINT_t *simint, int nthreads);
 
-CIntStatus_t CInt_destroySIMINT(SIMINT_t simint);
+CIntStatus_t CInt_destroySIMINT(SIMINT_t simint, int show_stat);
 
 CIntStatus_t
-CInt_computeShellQuartet_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
+CInt_computeShellQuartet_SIMINT(SIMINT_t simint, int tid,
                                 int A, int B, int C, int D,
                                 double **integrals, int *nints);
 
@@ -207,18 +224,24 @@ CInt_computePairCoreH_SIMINT(BasisSet_t basis, SIMINT_t simint, int tid,
                            int A, int B,
                            double **integrals, int *nints);
 
-/* ---------- huangh223 modification part start ---------- */
 
 // The following 2 constants are corresponding to SIMINT_OSTEI_MAXAM
 // and SIMINT_NSHELL_SIMD in Simint. I cannot include <simint/simint.h>
 // here, so I just update the values manually. This problem should be 
 // solved later.
-#define _SIMINT_OSTEI_MAXAM 7
+#define _SIMINT_OSTEI_MAXAM 4
 #define _SIMINT_NSHELL_SIMD 16
 
-#define _SIMINT_AM_PAIRS    (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
+#define _SIMINT_AM_PAIRS (((_SIMINT_OSTEI_MAXAM) + 1) * ((_SIMINT_OSTEI_MAXAM) + 1))
 
-double CInt_get_walltime_sec();
+static inline double CInt_get_walltime_sec()
+{
+    double sec;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    sec = tv.tv_sec + (double) tv.tv_usec / 1000000.0;
+    return sec;
+}
 
 void   CInt_SIMINT_addupdateFtimer(SIMINT_t simint, double sec);
 
@@ -230,13 +253,11 @@ void   CInt_SIMINT_freeThreadMultishellpair(void **thread_multi_shellpair);
 
 CIntStatus_t 
 CInt_computeShellQuartetBatch_SIMINT(
-    BasisSet_t basis, SIMINT_t simint, int tid,
+    SIMINT_t simint, int tid,
     int M, int N, int *P_list, int *Q_list,
     int npair, double **thread_batch_integrals, int *thread_batch_nints,
     void **thread_multi_shellpairs
 );
-
-/* ----------- huangh223 modification part end ----------- */
 
 #ifdef __INTEL_OFFLOAD
 CIntStatus_t CInt_offload_createBasisSet( BasisSet_t *_basis );
